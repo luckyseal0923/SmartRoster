@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>班表確認與簽名</title>
+
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Noto Sans TC", sans-serif;
+    background: #f5f6f7;
+    margin: 0;
+    padding: 16px;
+  }
+
+  .card {
+    max-width: 520px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 20px;
+    border-radius: 14px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  }
+
+  h2 {
+    margin-top: 0;
+    text-align: center;
+  }
+
+  label {
+    font-weight: 600;
+    display: block;
+    margin-top: 16px;
+    margin-bottom: 6px;
+  }
+
+  input {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+  }
+
+  button {
+    width: 100%;
+    margin-top: 16px;
+    padding: 14px;
+    font-size: 16px;
+    border-radius: 10px;
+    border: none;
+    background: #2563eb;
+    color: white;
+    font-weight: 600;
+  }
+
+  button.secondary {
+    background: #e5e7eb;
+    color: #111;
+  }
+
+  .schedule {
+    background: #f1f5f9;
+    padding: 12px;
+    border-radius: 8px;
+    margin-top: 12px;
+    white-space: pre-line;
+    font-size: 15px;
+  }
+
+  canvas {
+    width: 100%;
+    height: 180px;
+    border: 2px dashed #94a3b8;
+    border-radius: 8px;
+    touch-action: none;
+    background: #fff;
+  }
+
+  .hidden {
+    display: none;
+  }
+
+  .hint {
+    font-size: 13px;
+    color: #555;
+    margin-top: 6px;
+  }
+</style>
+</head>
+
+<body>
+
+<div class="card">
+  <h2>班表確認與簽名</h2>
+
+  <!-- 員編輸入 -->
+  <div id="step1">
+    <label>請輸入員編</label>
+    <input id="staffId" placeholder="例如：A123456" />
+    <button onclick="verifyStaff()">確認</button>
+    <div class="hint">請使用手機手指簽名</div>
+  </div>
+
+  <!-- 班表與簽名 -->
+  <div id="step2" class="hidden">
+    <p><strong id="staffName"></strong></p>
+
+    <label>你的班表</label>
+    <div class="schedule" id="scheduleText"></div>
+
+    <label>請於下方簽名</label>
+    <canvas id="signature"></canvas>
+
+    <button class="secondary" onclick="clearCanvas()">清除簽名</button>
+    <button onclick="submitSignature()">確認送出</button>
+  </div>
+</div>
+
+<script>
+  // ===== 模擬資料（之後可改成 n8n API） =====
+  const fakeData = {
+    "A123456": {
+      name: "王○明",
+      schedule: "2/1 夜班\n2/3 早班\n2/5 OFF"
+    },
+    "B654321": {
+      name: "李○華",
+      schedule: "2/2 早班\n2/4 夜班\n2/6 OFF"
+    }
+  };
+
+  function verifyStaff() {
+    const staffId = document.getElementById("staffId").value.trim();
+    if (!staffId) {
+      alert("請輸入員編");
+      return;
+    }
+
+    const record = fakeData[staffId];
+    if (!record) {
+      alert("查無此員編");
+      return;
+    }
+
+    document.getElementById("staffName").innerText =
+      record.name + "（員編 " + staffId + "）";
+    document.getElementById("scheduleText").innerText =
+      record.schedule;
+
+    document.getElementById("step1").classList.add("hidden");
+    document.getElementById("step2").classList.remove("hidden");
+  }
+
+  // ===== 簽名 Canvas =====
+  const canvas = document.getElementById("signature");
+  const ctx = canvas.getContext("2d");
+
+  function resizeCanvas() {
+    const ratio = window.devicePixelRatio || 1;
+    canvas.width = canvas.offsetWidth * ratio;
+    canvas.height = canvas.offsetHeight * ratio;
+    ctx.scale(ratio, ratio);
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#000";
+  }
+
+  resizeCanvas();
+  window.addEventListener("resize", resizeCanvas);
+
+  let drawing = false;
+
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    if (e.touches) {
+      return {
+        x: e.touches[0].clientX - rect.left,
+        y: e.touches[0].clientY - rect.top
+      };
+    }
+    return {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    };
+  }
+
+  function startDraw(e) {
+    drawing = true;
+    const pos = getPos(e);
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+    e.preventDefault();
+  }
+
+  function draw(e) {
+    if (!drawing) return;
+    const pos = getPos(e);
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+    e.preventDefault();
+  }
+
+  function endDraw() {
+    drawing = false;
+  }
+
+  canvas.addEventListener("mousedown", startDraw);
+  canvas.addEventListener("mousemove", draw);
+  canvas.addEventListener("mouseup", endDraw);
+  canvas.addEventListener("mouseleave", endDraw);
+
+  canvas.addEventListener("touchstart", startDraw);
+  canvas.addEventListener("touchmove", draw);
+  canvas.addEventListener("touchend", endDraw);
+
+  function clearCanvas() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
+  function submitSignature() {
+    const dataUrl = canvas.toDataURL("image/png");
+
+    if (dataUrl.length < 2000) {
+      alert("請先簽名");
+      return;
+    }
+
+    // 之後直接改成 fetch n8n webhook
+    console.log("簽名圖 Base64：", dataUrl);
+
+    alert("簽名完成，已送出（模擬）");
+  }
+</script>
+
+</body>
+</html>
