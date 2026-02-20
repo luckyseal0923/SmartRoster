@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>班表確認與簽名</title>
+<title>班表確認與簽核</title>
 
 <style>
   body {
@@ -54,7 +54,7 @@
     font-weight: 600;
   }
 
-  button.secondary {
+  .secondary {
     background: #e5e7eb;
     color: #111;
   }
@@ -68,83 +68,100 @@
     font-size: 15px;
   }
 
-  canvas {
-    width: 100%;
-    height: 180px;
-    border: 2px dashed #94a3b8;
-    border-radius: 8px;
-    touch-action: none;
-    background: #fff;
-  }
-
   .hidden {
     display: none;
   }
 
-  .hint {
-    font-size: 13px;
-    color: #555;
-    margin-top: 6px;
+  /* ===== 滿版簽名畫面 ===== */
+  .signature-page {
+    position: fixed;
+    inset: 0;
+    background: #fff;
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .signature-header {
+    padding: 12px;
+    text-align: center;
+    font-weight: 600;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  canvas {
+    flex: 1;
+    border-top: 1px dashed #cbd5e1;
+    border-bottom: 1px dashed #cbd5e1;
+    touch-action: none;
+  }
+
+  .signature-actions {
+    padding: 12px;
+    display: flex;
+    gap: 10px;
+  }
+
+  .signature-actions button {
+    flex: 1;
   }
 </style>
 </head>
 
 <body>
 
-<div class="card">
-  <h2>班表確認與簽名</h2>
+<!-- STEP 1：輸入員編 -->
+<div class="card" id="step1">
+  <h2>班表確認</h2>
+  <label>請輸入員編</label>
+  <input id="staffId" placeholder="例如 A123456" />
+  <button onclick="verifyStaff()">確認</button>
+</div>
 
-  <!-- 員編輸入 -->
-  <div id="step1">
-    <label>請輸入員編</label>
-    <input id="staffId" placeholder="例如：A123456" />
-    <button onclick="verifyStaff()">確認</button>
-    <div class="hint">請使用手機手指簽名</div>
-  </div>
+<!-- STEP 2：班表確認 -->
+<div class="card hidden" id="step2">
+  <h2>請確認班表</h2>
+  <p id="staffInfo"></p>
 
-  <!-- 班表與簽名 -->
-  <div id="step2" class="hidden">
-    <p><strong id="staffName"></strong></p>
+  <label>你的班表</label>
+  <div class="schedule" id="scheduleText"></div>
 
-    <label>你的班表</label>
-    <div class="schedule" id="scheduleText"></div>
+  <button onclick="goToSignature()">確認並簽核</button>
+</div>
 
-    <label>請於下方簽名</label>
-    <canvas id="signature"></canvas>
-
-    <button class="secondary" onclick="clearCanvas()">清除簽名</button>
-    <button onclick="submitSignature()">確認送出</button>
+<!-- STEP 3：滿版簽名 -->
+<div class="signature-page hidden" id="step3">
+  <div class="signature-header">請於下方簽名</div>
+  <canvas id="signature"></canvas>
+  <div class="signature-actions">
+    <button class="secondary" onclick="clearCanvas()">清除</button>
+    <button onclick="submitSignature()">送出簽核</button>
   </div>
 </div>
 
 <script>
-  // ===== 模擬資料（之後可改成 n8n API） =====
+  /* ===== 模擬資料（之後接 n8n） ===== */
   const fakeData = {
     "A123456": {
       name: "王○明",
       schedule: "2/1 夜班\n2/3 早班\n2/5 OFF"
-    },
-    "B654321": {
-      name: "李○華",
-      schedule: "2/2 早班\n2/4 夜班\n2/6 OFF"
     }
   };
 
+  let currentStaffId = "";
+
   function verifyStaff() {
     const staffId = document.getElementById("staffId").value.trim();
-    if (!staffId) {
-      alert("請輸入員編");
-      return;
-    }
-
     const record = fakeData[staffId];
+
     if (!record) {
       alert("查無此員編");
       return;
     }
 
-    document.getElementById("staffName").innerText =
-      record.name + "（員編 " + staffId + "）";
+    currentStaffId = staffId;
+    document.getElementById("staffInfo").innerText =
+      `${record.name}（員編 ${staffId}）`;
     document.getElementById("scheduleText").innerText =
       record.schedule;
 
@@ -152,24 +169,24 @@
     document.getElementById("step2").classList.remove("hidden");
   }
 
-  // ===== 簽名 Canvas =====
+  function goToSignature() {
+    document.getElementById("step3").classList.remove("hidden");
+    resizeCanvas();
+  }
+
+  /* ===== Canvas 簽名 ===== */
   const canvas = document.getElementById("signature");
   const ctx = canvas.getContext("2d");
+  let drawing = false;
 
   function resizeCanvas() {
     const ratio = window.devicePixelRatio || 1;
-    canvas.width = canvas.offsetWidth * ratio;
-    canvas.height = canvas.offsetHeight * ratio;
-    ctx.scale(ratio, ratio);
+    canvas.width = canvas.clientWidth * ratio;
+    canvas.height = canvas.clientHeight * ratio;
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     ctx.lineWidth = 2;
     ctx.lineCap = "round";
-    ctx.strokeStyle = "#000";
   }
-
-  resizeCanvas();
-  window.addEventListener("resize", resizeCanvas);
-
-  let drawing = false;
 
   function getPos(e) {
     const rect = canvas.getBoundingClientRect();
@@ -187,16 +204,16 @@
 
   function startDraw(e) {
     drawing = true;
-    const pos = getPos(e);
+    const p = getPos(e);
     ctx.beginPath();
-    ctx.moveTo(pos.x, pos.y);
+    ctx.moveTo(p.x, p.y);
     e.preventDefault();
   }
 
   function draw(e) {
     if (!drawing) return;
-    const pos = getPos(e);
-    ctx.lineTo(pos.x, pos.y);
+    const p = getPos(e);
+    ctx.lineTo(p.x, p.y);
     ctx.stroke();
     e.preventDefault();
   }
@@ -209,7 +226,6 @@
   canvas.addEventListener("mousemove", draw);
   canvas.addEventListener("mouseup", endDraw);
   canvas.addEventListener("mouseleave", endDraw);
-
   canvas.addEventListener("touchstart", startDraw);
   canvas.addEventListener("touchmove", draw);
   canvas.addEventListener("touchend", endDraw);
@@ -220,16 +236,15 @@
 
   function submitSignature() {
     const dataUrl = canvas.toDataURL("image/png");
-
     if (dataUrl.length < 2000) {
       alert("請先簽名");
       return;
     }
 
-    // 之後直接改成 fetch n8n webhook
-    console.log("簽名圖 Base64：", dataUrl);
+    console.log("員編:", currentStaffId);
+    console.log("簽名 Base64:", dataUrl);
 
-    alert("簽名完成，已送出（模擬）");
+    alert("簽核完成（模擬）");
   }
 </script>
 
