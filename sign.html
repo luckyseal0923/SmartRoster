@@ -3,213 +3,114 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>班表確認與簽核</title>
+<title>手寫簽名</title>
 
 <style>
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Noto Sans TC", sans-serif;
-    background: #f5f6f7;
+    background: #fff;
     margin: 0;
     padding: 16px;
   }
 
-  .card {
-    max-width: 520px;
-    margin: 0 auto 16px;
-    background: #fff;
-    padding: 20px;
-    border-radius: 14px;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-  }
-
   h2 {
-    margin-top: 0;
     text-align: center;
+    margin: 0 0 8px;
   }
 
-  label {
-    font-weight: 600;
-    display: block;
-    margin-top: 16px;
-    margin-bottom: 6px;
+  .hint {
+    text-align: center;
+    color: #555;
+    margin-bottom: 12px;
+    font-size: 14px;
   }
 
-  input {
+  canvas {
     width: 100%;
-    padding: 12px;
-    font-size: 16px;
+    height: 220px;          /* ✅ 固定顯示高度 */
+    border: 2px dashed #cbd5e1;
     border-radius: 8px;
-    border: 1px solid #ccc;
+    touch-action: none;     /* ✅ 關鍵：避免頁面滑動 */
+    background: #fff;
+    display: block;
   }
 
   button {
     width: 100%;
-    margin-top: 16px;
+    margin-top: 12px;
     padding: 14px;
     font-size: 16px;
     border-radius: 10px;
     border: none;
+    font-weight: 600;
+  }
+
+  .primary {
     background: #2563eb;
     color: white;
-    font-weight: 600;
   }
 
   .secondary {
     background: #e5e7eb;
     color: #111;
   }
-
-  .schedule {
-    background: #f1f5f9;
-    padding: 12px;
-    border-radius: 8px;
-    margin-top: 12px;
-    white-space: pre-line;
-    font-size: 15px;
-  }
-
-  .hidden {
-    display: none;
-  }
-
-  /* ===== 簽名區（手機適合高度） ===== */
-  .signature-modal {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.4);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .signature-box {
-    background: #fff;
-    width: 92%;
-    max-width: 520px;
-    border-radius: 14px;
-    padding: 16px;
-  }
-
-  .signature-title {
-    text-align: center;
-    font-weight: 600;
-    margin-bottom: 8px;
-  }
-
-  canvas {
-    width: 100%;
-    height: 220px;   /* ✅ 手機友善高度 */
-    border: 2px dashed #cbd5e1;
-    border-radius: 8px;
-    touch-action: none;
-    background: #fff;
-  }
-
-  .signature-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 12px;
-  }
-
-  .signature-actions button {
-    flex: 1;
-  }
 </style>
 </head>
 
 <body>
 
-<!-- STEP 1：班表確認主頁 -->
-<div class="card" id="mainPage">
-  <h2>班表確認</h2>
+<h2>簽核確認</h2>
+<div class="hint" id="staffHint"></div>
 
-  <label>請輸入員編</label>
-  <input id="staffId" placeholder="例如 A123456" />
-  <button onclick="verifyStaff()">查詢班表</button>
+<canvas id="signature"></canvas>
 
-  <div id="scheduleArea" class="hidden">
-    <p id="staffInfo"></p>
-
-    <label>你的班表</label>
-    <div class="schedule" id="scheduleText"></div>
-
-    <button onclick="openSignature()">確認並簽核</button>
-  </div>
-</div>
-
-<!-- STEP 2：簽名彈出視窗 -->
-<div id="signatureModal" class="signature-modal hidden">
-  <div class="signature-box">
-    <div class="signature-title">請於下方簽名</div>
-    <canvas id="signature"></canvas>
-
-    <div class="signature-actions">
-      <button class="secondary" onclick="clearCanvas()">清除</button>
-      <button onclick="submitSignature()">送出簽核</button>
-    </div>
-  </div>
-</div>
+<button class="secondary" onclick="clearCanvas()">清除簽名</button>
+<button class="primary" onclick="submit()">送出簽核</button>
 
 <script>
-  /* ===== 模擬資料（之後接 n8n） ===== */
-  const fakeData = {
-    "A123456": {
-      name: "王○明",
-      schedule: "2/1 夜班\n2/3 早班\n2/5 OFF"
-    }
-  };
+  /* ===== 讀取網址參數 ===== */
+  const params = new URLSearchParams(location.search);
+  const staffId = params.get("staffId");
+  document.getElementById("staffHint").innerText =
+    staffId ? `員編：${staffId}` : "未提供員編";
 
-  let currentStaffId = "";
-
-  function verifyStaff() {
-    const staffId = document.getElementById("staffId").value.trim();
-    const record = fakeData[staffId];
-
-    if (!record) {
-      alert("查無此員編");
-      return;
-    }
-
-    currentStaffId = staffId;
-    document.getElementById("staffInfo").innerText =
-      `${record.name}（員編 ${staffId}）`;
-    document.getElementById("scheduleText").innerText =
-      record.schedule;
-
-    document.getElementById("scheduleArea").classList.remove("hidden");
-  }
-
-  function openSignature() {
-    document.getElementById("signatureModal").classList.remove("hidden");
-    resizeCanvas();
-  }
-
-  /* ===== Canvas 簽名 ===== */
+  /* ===== Canvas 設定 ===== */
   const canvas = document.getElementById("signature");
   const ctx = canvas.getContext("2d");
+
   let drawing = false;
 
-  function resizeCanvas() {
+  function setupCanvas() {
+    const rect = canvas.getBoundingClientRect();
     const ratio = window.devicePixelRatio || 1;
-    canvas.width = canvas.offsetWidth * ratio;
-    canvas.height = canvas.offsetHeight * ratio;
+
+    /* 實體像素大小 */
+    canvas.width = rect.width * ratio;
+    canvas.height = rect.height * ratio;
+
+    /* 重設 transform，避免累積誤差 */
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+
     ctx.lineWidth = 2;
     ctx.lineCap = "round";
+    ctx.strokeStyle = "#000";
   }
 
-  function getPos(e) {
+  setupCanvas();
+  window.addEventListener("resize", setupCanvas);
+
+  function getPoint(e) {
     const rect = canvas.getBoundingClientRect();
-    const t = e.touches ? e.touches[0] : e;
+    const touch = e.touches ? e.touches[0] : e;
     return {
-      x: t.clientX - rect.left,
-      y: t.clientY - rect.top
+      x: touch.clientX - rect.left,
+      y: touch.clientY - rect.top
     };
   }
 
   function startDraw(e) {
     drawing = true;
-    const p = getPos(e);
+    const p = getPoint(e);
     ctx.beginPath();
     ctx.moveTo(p.x, p.y);
     e.preventDefault();
@@ -217,7 +118,7 @@
 
   function draw(e) {
     if (!drawing) return;
-    const p = getPos(e);
+    const p = getPoint(e);
     ctx.lineTo(p.x, p.y);
     ctx.stroke();
     e.preventDefault();
@@ -227,30 +128,33 @@
     drawing = false;
   }
 
+  /* ===== 滑鼠 ===== */
   canvas.addEventListener("mousedown", startDraw);
   canvas.addEventListener("mousemove", draw);
   canvas.addEventListener("mouseup", endDraw);
   canvas.addEventListener("mouseleave", endDraw);
-  canvas.addEventListener("touchstart", startDraw);
-  canvas.addEventListener("touchmove", draw);
+
+  /* ===== 觸控 ===== */
+  canvas.addEventListener("touchstart", startDraw, { passive: false });
+  canvas.addEventListener("touchmove", draw, { passive: false });
   canvas.addEventListener("touchend", endDraw);
 
   function clearCanvas() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   }
 
-  function submitSignature() {
-    const dataUrl = canvas.toDataURL("image/png");
-    if (dataUrl.length < 2000) {
+  function submit() {
+    const data = canvas.toDataURL("image/png");
+
+    if (data.length < 2000) {
       alert("請先簽名");
       return;
     }
 
-    console.log("員編:", currentStaffId);
-    console.log("簽名 Base64:", dataUrl);
+    console.log("staffId:", staffId);
+    console.log("signature base64:", data);
 
     alert("簽核完成（模擬）");
-    document.getElementById("signatureModal").classList.add("hidden");
   }
 </script>
 
