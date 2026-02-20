@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>班表確認</title>
+
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Noto Sans TC", sans-serif;
+    background: #f5f6f7;
+    margin: 0;
+    padding: 16px;
+  }
+
+  .card {
+    max-width: 520px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 20px;
+    border-radius: 14px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  }
+
+  h2 {
+    text-align: center;
+    margin-top: 0;
+  }
+
+  label {
+    font-weight: 600;
+    margin-top: 16px;
+    display: block;
+  }
+
+  input {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    margin-top: 6px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+  }
+
+  button {
+    width: 100%;
+    margin-top: 16px;
+    padding: 14px;
+    font-size: 16px;
+    border-radius: 10px;
+    border: none;
+    background: #2563eb;
+    color: white;
+    font-weight: 600;
+  }
+
+  .schedule {
+    background: #f1f5f9;
+    padding: 12px;
+    border-radius: 8px;
+    margin-top: 12px;
+    white-space: pre-line;
+  }
+
+  .hidden {
+    display: none;
+  }
+</style>
+</head>
+
+<body>
+
+<div class="card">
+  <h2>班表確認</h2>
+
+  <label>請輸入員編</label>
+  <input id="staffId" placeholder="例如 A123456" />
+  <button onclick="lookup()">查詢班表</button>
+
+  <div id="result" class="hidden">
+    <p id="staffInfo"></p>
+
+    <label>你的班表</label>
+    <div class="schedule" id="scheduleText"></div>
+
+    <button onclick="goSign()">確認並簽核</button>
+  </div>
+</div>
+
+<script>
+  /* 模擬資料（之後改成 n8n） */
+  const fakeData = {
+    "A123456": {
+      name: "王○明",
+      schedule: "2/1 夜班\n2/3 早班\n2/5 OFF"
+    }
+  };
+
+  let currentStaffId = "";
+
+  function lookup() {
+    const staffId = document.getElementById("staffId").value.trim();
+    const record = fakeData[staffId];
+
+    if (!record) {
+      alert("查無此員編");
+      return;
+    }
+
+    currentStaffId = staffId;
+    document.getElementById("staffInfo").innerText =
+      `${record.name}（員編 ${staffId}）`;
+    document.getElementById("scheduleText").innerText =
+      record.schedule;
+    document.getElementById("result").classList.remove("hidden");
+  }
+
+  function goSign() {
+    location.href = `sign.html?staffId=${encodeURIComponent(currentStaffId)}`;
+  }
+</script>
+
+</body>
+</html>
