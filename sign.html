@@ -15,7 +15,7 @@
 
   .card {
     max-width: 520px;
-    margin: 0 auto;
+    margin: 0 auto 16px;
     background: #fff;
     padding: 20px;
     border-radius: 14px;
@@ -72,34 +72,43 @@
     display: none;
   }
 
-  /* ===== 滿版簽名畫面 ===== */
-  .signature-page {
+  /* ===== 簽名區（手機適合高度） ===== */
+  .signature-modal {
     position: fixed;
     inset: 0;
-    background: #fff;
-    z-index: 999;
+    background: rgba(0,0,0,0.4);
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    justify-content: center;
   }
 
-  .signature-header {
-    padding: 12px;
+  .signature-box {
+    background: #fff;
+    width: 92%;
+    max-width: 520px;
+    border-radius: 14px;
+    padding: 16px;
+  }
+
+  .signature-title {
     text-align: center;
     font-weight: 600;
-    border-bottom: 1px solid #e5e7eb;
+    margin-bottom: 8px;
   }
 
   canvas {
-    flex: 1;
-    border-top: 1px dashed #cbd5e1;
-    border-bottom: 1px dashed #cbd5e1;
+    width: 100%;
+    height: 220px;   /* ✅ 手機友善高度 */
+    border: 2px dashed #cbd5e1;
+    border-radius: 8px;
     touch-action: none;
+    background: #fff;
   }
 
   .signature-actions {
-    padding: 12px;
     display: flex;
     gap: 10px;
+    margin-top: 12px;
   }
 
   .signature-actions button {
@@ -110,32 +119,34 @@
 
 <body>
 
-<!-- STEP 1：輸入員編 -->
-<div class="card" id="step1">
+<!-- STEP 1：班表確認主頁 -->
+<div class="card" id="mainPage">
   <h2>班表確認</h2>
+
   <label>請輸入員編</label>
   <input id="staffId" placeholder="例如 A123456" />
-  <button onclick="verifyStaff()">確認</button>
+  <button onclick="verifyStaff()">查詢班表</button>
+
+  <div id="scheduleArea" class="hidden">
+    <p id="staffInfo"></p>
+
+    <label>你的班表</label>
+    <div class="schedule" id="scheduleText"></div>
+
+    <button onclick="openSignature()">確認並簽核</button>
+  </div>
 </div>
 
-<!-- STEP 2：班表確認 -->
-<div class="card hidden" id="step2">
-  <h2>請確認班表</h2>
-  <p id="staffInfo"></p>
+<!-- STEP 2：簽名彈出視窗 -->
+<div id="signatureModal" class="signature-modal hidden">
+  <div class="signature-box">
+    <div class="signature-title">請於下方簽名</div>
+    <canvas id="signature"></canvas>
 
-  <label>你的班表</label>
-  <div class="schedule" id="scheduleText"></div>
-
-  <button onclick="goToSignature()">確認並簽核</button>
-</div>
-
-<!-- STEP 3：滿版簽名 -->
-<div class="signature-page hidden" id="step3">
-  <div class="signature-header">請於下方簽名</div>
-  <canvas id="signature"></canvas>
-  <div class="signature-actions">
-    <button class="secondary" onclick="clearCanvas()">清除</button>
-    <button onclick="submitSignature()">送出簽核</button>
+    <div class="signature-actions">
+      <button class="secondary" onclick="clearCanvas()">清除</button>
+      <button onclick="submitSignature()">送出簽核</button>
+    </div>
   </div>
 </div>
 
@@ -165,12 +176,11 @@
     document.getElementById("scheduleText").innerText =
       record.schedule;
 
-    document.getElementById("step1").classList.add("hidden");
-    document.getElementById("step2").classList.remove("hidden");
+    document.getElementById("scheduleArea").classList.remove("hidden");
   }
 
-  function goToSignature() {
-    document.getElementById("step3").classList.remove("hidden");
+  function openSignature() {
+    document.getElementById("signatureModal").classList.remove("hidden");
     resizeCanvas();
   }
 
@@ -181,8 +191,8 @@
 
   function resizeCanvas() {
     const ratio = window.devicePixelRatio || 1;
-    canvas.width = canvas.clientWidth * ratio;
-    canvas.height = canvas.clientHeight * ratio;
+    canvas.width = canvas.offsetWidth * ratio;
+    canvas.height = canvas.offsetHeight * ratio;
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     ctx.lineWidth = 2;
     ctx.lineCap = "round";
@@ -190,15 +200,10 @@
 
   function getPos(e) {
     const rect = canvas.getBoundingClientRect();
-    if (e.touches) {
-      return {
-        x: e.touches[0].clientX - rect.left,
-        y: e.touches[0].clientY - rect.top
-      };
-    }
+    const t = e.touches ? e.touches[0] : e;
     return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top
+      x: t.clientX - rect.left,
+      y: t.clientY - rect.top
     };
   }
 
@@ -245,6 +250,7 @@
     console.log("簽名 Base64:", dataUrl);
 
     alert("簽核完成（模擬）");
+    document.getElementById("signatureModal").classList.add("hidden");
   }
 </script>
 
