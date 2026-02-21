@@ -14,6 +14,7 @@
   --muted: #6b7280;
   --border: #e5e7eb;
   --success: #10b981;
+  --warn: #b45309;
 }
 
 body {
@@ -24,25 +25,12 @@ body {
   padding: 32px;
 }
 
-.container {
-  max-width: 1100px;
-  margin: auto;
-}
+.container { max-width: 1100px; margin: auto; }
 
 /* ===== Header ===== */
-header {
-  margin-bottom: 28px;
-}
-
-header h1 {
-  margin: 0;
-  font-size: 28px;
-}
-
-header p {
-  margin: 6px 0 0;
-  color: var(--muted);
-}
+header { margin-bottom: 28px; }
+header h1 { margin: 0; font-size: 28px; }
+header p { margin: 6px 0 0; color: var(--muted); }
 
 /* ===== Card ===== */
 .card {
@@ -67,7 +55,7 @@ label {
   display: block;
 }
 
-input, select {
+input {
   width: 100%;
   padding: 10px 12px;
   border-radius: 8px;
@@ -80,32 +68,27 @@ button {
   color: #fff;
   border: none;
   border-radius: 10px;
-  padding: 12px;
+  padding: 12px 16px;
   font-size: 16px;
   cursor: pointer;
 }
 
-button:hover {
-  opacity: .9;
+button.secondary {
+  background: #e5e7eb;
+  color: #111827;
 }
+
+button:hover { opacity: .9; }
 
 /* ===== Table ===== */
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
+table { width: 100%; border-collapse: collapse; }
 th, td {
   padding: 12px;
   border-bottom: 1px solid var(--border);
   text-align: left;
   font-size: 14px;
 }
-
-th {
-  color: var(--muted);
-  font-weight: 600;
-}
+th { color: var(--muted); font-weight: 600; }
 
 .progress {
   background: #e5e7eb;
@@ -113,16 +96,31 @@ th {
   height: 10px;
   overflow: hidden;
 }
-
 .progress-bar {
   background: var(--success);
   height: 100%;
 }
 
-.copy {
-  cursor: pointer;
-  font-size: 18px;
+.copy { cursor: pointer; font-size: 18px; }
+
+/* ===== Modal ===== */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
 }
+
+.modal-box {
+  background: #fff;
+  border-radius: 14px;
+  padding: 24px;
+  width: 420px;
+}
+
+.warn { color: var(--warn); }
 </style>
 </head>
 
@@ -141,17 +139,17 @@ th {
   <div class="form-grid">
     <div>
       <label>建立任務者</label>
-      <input id="creator" placeholder="請輸入姓名" />
+      <input id="creator" />
     </div>
 
     <div>
       <label>任務密碼</label>
-      <input id="password" type="password" placeholder="僅提供簽核驗證使用" />
+      <input id="password" type="password" />
     </div>
 
     <div>
       <label>單位別</label>
-      <input id="unit" placeholder="例如：急診部" />
+      <input id="unit" />
     </div>
 
     <div>
@@ -166,13 +164,12 @@ th {
   </div>
 
   <br>
-  <button onclick="createTask()">建立任務</button>
+  <button onclick="validateTask()">上傳並檢查</button>
 </div>
 
-<!-- ================= 任務清單 ================= -->
+<!-- ================= 任務清單（保留原本） ================= -->
 <div class="card">
   <h3>📊 任務清單</h3>
-
   <table>
     <thead>
       <tr>
@@ -183,35 +180,29 @@ th {
         <th>連結</th>
       </tr>
     </thead>
-    <tbody id="taskTable">
-      <!-- 假資料 -->
-    </tbody>
+    <tbody id="taskTable"></tbody>
   </table>
 </div>
 
 </div>
 
+<!-- ================= 查核 Modal ================= -->
+<div class="modal" id="modal">
+  <div class="modal-box">
+    <h3>📄 班表初步查核</h3>
+    <div id="checkResult"></div>
+    <br>
+    <button onclick="createTask()">確認建立</button>
+    <button class="secondary" onclick="closeModal()">取消</button>
+  </div>
+</div>
+
 <script>
-/* ================= 假資料（之後接 n8n） ================= */
+/* ===== 假資料 ===== */
 const tasks = [
-  {
-    taskId: "SHIFT-2026-001",
-    unit: "急診部",
-    month: "2026-02",
-    progress: 80,
-    url: "https://example.com/task/SHIFT-2026-001"
-  },
-  {
-    taskId: "SHIFT-2026-002",
-    unit: "內科",
-    month: "2026-03",
-    progress: 45,
-    url: "https://example.com/task/SHIFT-2026-002"
-  }
+  { taskId:"SHIFT-2026-001", unit:"急診部", month:"2026-02", progress:80, url:"https://example.com" }
 ];
-
 const table = document.getElementById("taskTable");
-
 tasks.forEach(t => {
   table.innerHTML += `
     <tr>
@@ -219,44 +210,72 @@ tasks.forEach(t => {
       <td>${t.unit}</td>
       <td>${t.month}</td>
       <td>
-        <div class="progress">
-          <div class="progress-bar" style="width:${t.progress}%"></div>
-        </div>
+        <div class="progress"><div class="progress-bar" style="width:${t.progress}%"></div></div>
         ${t.progress}%
       </td>
-      <td>
-        <span class="copy" onclick="copy('${t.url}')">📋</span>
-      </td>
-    </tr>
-  `;
+      <td><span class="copy" onclick="copy('${t.url}')">📋</span></td>
+    </tr>`;
 });
 
-/* ================= 建立任務（送 n8n） ================= */
-function createTask() {
-  const file = document.getElementById("file").files[0];
-  if (!file) {
-    alert("請上傳 Excel");
-    return;
-  }
+/* ===== 查核 ===== */
+let cachedFormData = null;
 
-  const formData = new FormData();
-  formData.append("creator", creator.value);
-  formData.append("password", password.value);
-  formData.append("unit", unit.value);
-  formData.append("month", month.value);
-  formData.append("schedule", file);
+function validateTask() {
+  const file = document.getElementById("file").files[0];
+  if (!file) return alert("請上傳 Excel");
+
+  const fd = buildFormData("validate");
+  cachedFormData = fd;
 
   fetch("https://你的-n8n-domain/webhook/shift-upload", {
     method: "POST",
-    body: formData
+    body: fd
   })
-  .then(res => res.json())
+  .then(r => r.json())
+  .then(showResult);
+}
+
+function showResult(data) {
+  let html = `✔ 待簽核人數：${data.signerCount} 人<br>`;
+  if (data.emptyName > 0)
+    html += `<div class="warn">⚠ 姓名空白：${data.emptyName} 筆</div>`;
+  if (data.duplicateId > 0)
+    html += `<div class="warn">⚠ 員編重複：${data.duplicateId} 筆</div>`;
+
+  document.getElementById("checkResult").innerHTML = html;
+  document.getElementById("modal").style.display = "flex";
+}
+
+/* ===== 正式建立 ===== */
+function createTask() {
+  cachedFormData.set("mode", "create");
+
+  fetch("https://你的-n8n-domain/webhook/shift-upload", {
+    method: "POST",
+    body: cachedFormData
+  })
+  .then(r => r.json())
   .then(data => {
-    alert("任務已建立\n" + data.taskId);
+    alert("任務建立完成：" + data.taskId);
+    closeModal();
   });
 }
 
-/* ================= 複製連結 ================= */
+function closeModal() {
+  document.getElementById("modal").style.display = "none";
+}
+
+function buildFormData(mode) {
+  const fd = new FormData();
+  fd.append("mode", mode);
+  fd.append("creator", creator.value);
+  fd.append("password", password.value);
+  fd.append("unit", unit.value);
+  fd.append("month", month.value);
+  fd.append("schedule", document.getElementById("file").files[0]);
+  return fd;
+}
+
 function copy(text) {
   navigator.clipboard.writeText(text);
   alert("連結已複製");
