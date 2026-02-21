@@ -2,83 +2,266 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8" />
-<title>班表上傳系統</title>
+<title>SmartRoster｜智慧班表簽核系統</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
 <style>
+:root {
+  --primary: #2563eb;
+  --bg: #f4f6f8;
+  --card: #ffffff;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --success: #10b981;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Noto Sans TC", sans-serif;
-  background: #f5f6f7;
+  background: var(--bg);
+  color: var(--text);
+  margin: 0;
   padding: 32px;
 }
 
-.card {
-  max-width: 480px;
+.container {
+  max-width: 1100px;
   margin: auto;
-  background: #fff;
+}
+
+/* ===== Header ===== */
+header {
+  margin-bottom: 28px;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 28px;
+}
+
+header p {
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+
+/* ===== Card ===== */
+.card {
+  background: var(--card);
+  border-radius: 14px;
   padding: 24px;
-  border-radius: 12px;
-  box-shadow: 0 6px 18px rgba(0,0,0,.1);
+  box-shadow: 0 6px 18px rgba(0,0,0,.08);
+  margin-bottom: 28px;
+}
+
+/* ===== Form ===== */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+label {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 4px;
+  display: block;
+}
+
+input, select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-size: 14px;
 }
 
 button {
-  width: 100%;
-  padding: 12px;
-  background: #2563eb;
+  background: var(--primary);
   color: #fff;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
+  padding: 12px;
   font-size: 16px;
   cursor: pointer;
 }
 
-.result {
-  margin-top: 20px;
-  background: #f1f5f9;
+button:hover {
+  opacity: .9;
+}
+
+/* ===== Table ===== */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td {
   padding: 12px;
-  border-radius: 8px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
   font-size: 14px;
+}
+
+th {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.progress {
+  background: #e5e7eb;
+  border-radius: 999px;
+  height: 10px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  background: var(--success);
+  height: 100%;
+}
+
+.copy {
+  cursor: pointer;
+  font-size: 18px;
 }
 </style>
 </head>
 
 <body>
+<div class="container">
+
+<header>
+  <h1>SmartRoster</h1>
+  <p>智慧班表簽核系統</p>
+</header>
+
+<!-- ================= 新任務建立 ================= -->
 <div class="card">
-  <h2>📅 單位班表上傳</h2>
+  <h3>📌 建立新簽核任務</h3>
 
-  <input type="file" id="file" accept=".xls,.xlsx" />
-  <br /><br />
+  <div class="form-grid">
+    <div>
+      <label>建立任務者</label>
+      <input id="creator" placeholder="請輸入姓名" />
+    </div>
 
-  <button onclick="upload()">上傳並產生任務</button>
+    <div>
+      <label>任務密碼</label>
+      <input id="password" type="password" placeholder="僅提供簽核驗證使用" />
+    </div>
 
-  <div id="result" class="result" style="display:none;"></div>
+    <div>
+      <label>單位別</label>
+      <input id="unit" placeholder="例如：急診部" />
+    </div>
+
+    <div>
+      <label>簽核月份</label>
+      <input id="month" type="month" />
+    </div>
+
+    <div>
+      <label>班表 Excel</label>
+      <input id="file" type="file" accept=".xls,.xlsx" />
+    </div>
+  </div>
+
+  <br>
+  <button onclick="createTask()">建立任務</button>
+</div>
+
+<!-- ================= 任務清單 ================= -->
+<div class="card">
+  <h3>📊 任務清單</h3>
+
+  <table>
+    <thead>
+      <tr>
+        <th>任務編碼</th>
+        <th>單位</th>
+        <th>月份</th>
+        <th>完成度</th>
+        <th>連結</th>
+      </tr>
+    </thead>
+    <tbody id="taskTable">
+      <!-- 假資料 -->
+    </tbody>
+  </table>
+</div>
+
 </div>
 
 <script>
-function upload() {
+/* ================= 假資料（之後接 n8n） ================= */
+const tasks = [
+  {
+    taskId: "SHIFT-2026-001",
+    unit: "急診部",
+    month: "2026-02",
+    progress: 80,
+    url: "https://example.com/task/SHIFT-2026-001"
+  },
+  {
+    taskId: "SHIFT-2026-002",
+    unit: "內科",
+    month: "2026-03",
+    progress: 45,
+    url: "https://example.com/task/SHIFT-2026-002"
+  }
+];
+
+const table = document.getElementById("taskTable");
+
+tasks.forEach(t => {
+  table.innerHTML += `
+    <tr>
+      <td>${t.taskId}</td>
+      <td>${t.unit}</td>
+      <td>${t.month}</td>
+      <td>
+        <div class="progress">
+          <div class="progress-bar" style="width:${t.progress}%"></div>
+        </div>
+        ${t.progress}%
+      </td>
+      <td>
+        <span class="copy" onclick="copy('${t.url}')">📋</span>
+      </td>
+    </tr>
+  `;
+});
+
+/* ================= 建立任務（送 n8n） ================= */
+function createTask() {
   const file = document.getElementById("file").files[0];
   if (!file) {
-    alert("請選擇 Excel 檔案");
+    alert("請上傳 Excel");
     return;
   }
 
   const formData = new FormData();
+  formData.append("creator", creator.value);
+  formData.append("password", password.value);
+  formData.append("unit", unit.value);
+  formData.append("month", month.value);
   formData.append("schedule", file);
 
-  fetch("/upload", {
+  fetch("https://你的-n8n-domain/webhook/shift-upload", {
     method: "POST",
     body: formData
   })
   .then(res => res.json())
   .then(data => {
-    document.getElementById("result").style.display = "block";
-    document.getElementById("result").innerHTML = `
-      <strong>任務編碼：</strong>${data.taskId}<br/>
-      <strong>任務連結：</strong><br/>
-      <a href="${data.url}" target="_blank">${data.url}</a>
-    `;
+    alert("任務已建立\n" + data.taskId);
   });
 }
+
+/* ================= 複製連結 ================= */
+function copy(text) {
+  navigator.clipboard.writeText(text);
+  alert("連結已複製");
+}
 </script>
+
 </body>
 </html>
