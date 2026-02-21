@@ -7,172 +7,100 @@
 
 <style>
 :root {
-  --primary: #374151;   /* 石墨灰 */
-  --accent: #059669;    /* 醫療綠 */
-  --bg: #f3f4f6;
-  --card: #ffffff;
-  --text: #111827;
-  --muted: #6b7280;
-  --border: #e5e7eb;
-  --warn: #b45309;
+  --primary:#374151;
+  --accent:#059669;
+  --bg:#eef2f0;           /* 淡淡背景 */
+  --card:#ffffff;
+  --text:#111827;
+  --muted:#6b7280;
+  --border:#e5e7eb;
+  --ok:#059669;
+  --warn:#b45309;
+  --bad:#b91c1c;
 }
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, "Noto Sans TC", sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  margin: 0;
-  padding: 32px;
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC",sans-serif;
+  background:var(--bg);
+  margin:0;
+  padding:32px;
 }
 
-.container {
-  max-width: 1200px;
-  margin: auto;
+.container{max-width:1200px;margin:auto;}
+
+header{margin-bottom:32px;}
+header h1{margin:0;font-size:30px;}
+header p{margin-top:6px;color:var(--muted);}
+
+.card{
+  background:var(--card);
+  border-radius:16px;
+  padding:28px;
+  box-shadow:0 8px 24px rgba(0,0,0,.06);
+  margin-bottom:32px;
 }
 
-header {
-  margin-bottom: 32px;
+.form-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px 20px;
 }
 
-header h1 {
-  margin: 0;
-  font-size: 30px;
+label{font-size:13px;color:var(--muted);margin-bottom:4px;display:block;}
+input{
+  width:100%;
+  padding:10px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  font-size:14px;
 }
 
-header p {
-  margin-top: 6px;
-  color: var(--muted);
+.upload-box{
+  margin-top:16px;
+  border:2px dashed var(--border);
+  border-radius:14px;
+  padding:24px;
+  text-align:center;
+  background:#fafafa;
 }
 
-/* ===== Card ===== */
-.card {
-  background: var(--card);
-  border-radius: 16px;
-  padding: 28px;
-  box-shadow: 0 8px 24px rgba(0,0,0,.08);
-  margin-bottom: 32px;
+.actions{
+  display:flex;
+  gap:16px;
+  margin-top:24px;
 }
 
-h3 {
-  margin-top: 0;
+button{
+  padding:14px 20px;
+  border-radius:12px;
+  border:none;
+  font-size:15px;
+  cursor:pointer;
 }
 
-/* ===== Form ===== */
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
+button.primary{background:var(--primary);color:#fff;}
+button.accent{background:var(--accent);color:#fff;}
+button:disabled{opacity:.5;cursor:not-allowed;}
+
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.45);
+  display:none;
+  align-items:center;
+  justify-content:center;
 }
 
-label {
-  font-size: 13px;
-  color: var(--muted);
-  margin-bottom: 6px;
-  display: block;
+.modal-box{
+  background:#fff;
+  border-radius:16px;
+  padding:28px;
+  width:440px;
 }
 
-input {
-  width: 100%;
-  padding: 12px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  font-size: 15px;
-}
-
-/* ===== Upload ===== */
-.upload-box {
-  border: 2px dashed var(--border);
-  border-radius: 14px;
-  padding: 28px;
-  text-align: center;
-  background: #fafafa;
-}
-
-/* ===== Buttons ===== */
-.actions {
-  display: flex;
-  gap: 16px;
-  margin-top: 24px;
-}
-
-button {
-  border-radius: 12px;
-  padding: 14px 20px;
-  font-size: 15px;
-  border: none;
-  cursor: pointer;
-}
-
-button.primary {
-  background: var(--primary);
-  color: #fff;
-}
-
-button.accent {
-  background: var(--accent);
-  color: #fff;
-}
-
-button:hover {
-  opacity: .9;
-}
-
-/* ===== Table ===== */
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th, td {
-  padding: 14px 12px;
-  border-bottom: 1px solid var(--border);
-  font-size: 14px;
-  text-align: left;
-}
-
-th {
-  color: var(--muted);
-  font-weight: 600;
-}
-
-.progress {
-  background: #e5e7eb;
-  border-radius: 999px;
-  height: 10px;
-  overflow: hidden;
-  margin-bottom: 6px;
-}
-
-.progress-bar {
-  background: var(--accent);
-  height: 100%;
-}
-
-.copy {
-  cursor: pointer;
-  font-size: 18px;
-}
-
-/* ===== Modal ===== */
-.modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.45);
-  display: none;
-  align-items: center;
-  justify-content: center;
-}
-
-.modal-box {
-  background: #fff;
-  border-radius: 16px;
-  padding: 28px;
-  width: 420px;
-}
-
-.warn {
-  color: var(--warn);
-}
+.status-ok{color:var(--ok);}
+.status-warn{color:var(--warn);}
+.status-bad{color:var(--bad);}
 </style>
 </head>
 
@@ -191,88 +119,40 @@ th {
   <div class="form-grid">
     <div>
       <label>任務建立者</label>
-      <input placeholder="例如：王小明">
+      <input id="creator">
+    </div>
+
+    <div>
+      <label>員工編號</label>
+      <input id="staffId">
     </div>
 
     <div>
       <label>單位別</label>
-      <input placeholder="例如：急診部">
+      <input id="unit">
     </div>
 
     <div>
       <label>簽核月份</label>
-      <input type="month">
+      <input id="month" type="month">
     </div>
 
     <div>
-      <label>設定密碼</label>
-      <input type="password">
+      <label>設定密碼（至少 6 碼）</label>
+      <input id="password" type="password">
     </div>
   </div>
 
-  <br>
-
   <div class="upload-box">
     <strong>📄 上傳班表 Excel</strong>
-    <p style="color:var(--muted)">此檔案將用於辨識待簽核人員</p>
-    <input type="file" accept=".xls,.xlsx">
+    <p style="color:var(--muted)">用於辨識待簽核人數</p>
+    <input type="file">
   </div>
 
   <div class="actions">
-    <button class="accent" onclick="openModal()">🔍 查核任務辨識</button>
-    <button class="primary">建立簽核任務</button>
+    <button class="accent" onclick="runCheck()">🔍 查核任務辨識</button>
+    <button id="createBtn" class="primary" disabled>建立簽核任務</button>
   </div>
-</div>
-
-<!-- ===== 任務清單（表格版） ===== -->
-<div class="card">
-  <h3>📊 任務清單</h3>
-
-  <table>
-    <thead>
-      <tr>
-        <th>任務編碼</th>
-        <th>單位</th>
-        <th>月份</th>
-        <th>完成度</th>
-        <th>連結</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>SHIFT-2026-001</td>
-        <td>急診部</td>
-        <td>2026-02</td>
-        <td>
-          <div class="progress"><div class="progress-bar" style="width:80%"></div></div>
-          80%
-        </td>
-        <td><span class="copy" onclick="copyLink()">📋</span></td>
-      </tr>
-
-      <tr>
-        <td>SHIFT-2026-002</td>
-        <td>內科</td>
-        <td>2026-03</td>
-        <td>
-          <div class="progress"><div class="progress-bar" style="width:45%"></div></div>
-          45%
-        </td>
-        <td><span class="copy" onclick="copyLink()">📋</span></td>
-      </tr>
-
-      <tr>
-        <td>SHIFT-2026-003</td>
-        <td>外科</td>
-        <td>2026-04</td>
-        <td>
-          <div class="progress"><div class="progress-bar" style="width:100%"></div></div>
-          100%
-        </td>
-        <td><span class="copy" onclick="copyLink()">📋</span></td>
-      </tr>
-    </tbody>
-  </table>
 </div>
 
 </div>
@@ -281,22 +161,76 @@ th {
 <div class="modal" id="modal">
   <div class="modal-box">
     <h3>🔍 任務辨識結果</h3>
-    ✔ 偵測到待簽核人數：32 人<br>
-    <div class="warn">⚠ 發現 2 筆員編重複</div>
-    <br><br>
-    <button class="primary" onclick="closeModal()">確認</button>
+    <div id="checkContent"></div>
+    <br>
+    <button class="primary" onclick="confirmCreate()">確認</button>
   </div>
 </div>
 
 <script>
-function openModal() {
-  document.getElementById("modal").style.display = "flex";
+const createBtn = document.getElementById("createBtn");
+
+function validateForm(){
+  const now = new Date();
+  const m = document.getElementById("month").value;
+  const monthOK = m && new Date(m+"-01") >= new Date(now.getFullYear(), now.getMonth(),1);
+  const ok =
+    creator.value &&
+    staffId.value &&
+    unit.value &&
+    monthOK &&
+    password.value.length >= 6;
+  createBtn.disabled = !ok;
 }
-function closeModal() {
-  document.getElementById("modal").style.display = "none";
+
+["creator","staffId","unit","month","password"].forEach(id=>{
+  document.getElementById(id).addEventListener("input",validateForm);
+});
+
+function runCheck(){
+  const modal = document.getElementById("modal");
+  const content = document.getElementById("checkContent");
+
+  // === Demo 虛擬結果 ===
+  const status = ["ok","warn","bad"][Math.floor(Math.random()*3)];
+
+  if(status==="ok"){
+    content.innerHTML = `
+      <div class="status-ok">✔ 查核通過</div>
+      待簽核人數：32 人
+    `;
+    createBtn.disabled = false;
+  }
+
+  if(status==="warn"){
+    content.innerHTML = `
+      <div class="status-warn">⚠ 發現異常（可建立）</div>
+      待簽核人數：32 人<br>
+      • 員編重複：A123、A128<br>
+      • 姓名空白：第 12 列
+    `;
+    createBtn.disabled = false;
+  }
+
+  if(status==="bad"){
+    content.innerHTML = `
+      <div class="status-bad">❌ 查核失敗</div>
+      無法辨識待簽核名單，請重新上傳
+    `;
+    createBtn.disabled = true;
+  }
+
+  modal.style.display="flex";
 }
-function copyLink() {
-  alert("（Demo）任務連結已複製");
+
+function confirmCreate(){
+  createBtn.textContent="處理中…";
+  createBtn.disabled=true;
+  setTimeout(()=>{
+    createBtn.textContent="已建立";
+    alert("（Demo）任務建立完成");
+    document.getElementById("modal").style.display="none";
+  },1200);
 }
 </script>
 
