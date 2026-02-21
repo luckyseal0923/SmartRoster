@@ -7,13 +7,13 @@
 
 <style>
 :root {
-  --primary: #2563eb;
-  --bg: #f4f6f8;
+  --primary: #374151;      /* 石墨灰 */
+  --accent: #059669;       /* 醫療綠 */
+  --bg: #f3f4f6;
   --card: #ffffff;
-  --text: #1f2937;
+  --text: #111827;
   --muted: #6b7280;
   --border: #e5e7eb;
-  --success: #10b981;
   --warn: #b45309;
 }
 
@@ -25,89 +25,140 @@ body {
   padding: 32px;
 }
 
-.container { max-width: 1100px; margin: auto; }
+.container {
+  max-width: 1200px;
+  margin: auto;
+}
 
-/* ===== Header ===== */
-header { margin-bottom: 28px; }
-header h1 { margin: 0; font-size: 28px; }
-header p { margin: 6px 0 0; color: var(--muted); }
+header {
+  margin-bottom: 32px;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 30px;
+  letter-spacing: .5px;
+}
+
+header p {
+  margin-top: 6px;
+  color: var(--muted);
+}
 
 /* ===== Card ===== */
 .card {
   background: var(--card);
-  border-radius: 14px;
-  padding: 24px;
-  box-shadow: 0 6px 18px rgba(0,0,0,.08);
-  margin-bottom: 28px;
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.08);
+  margin-bottom: 32px;
+}
+
+h3 {
+  margin-top: 0;
 }
 
 /* ===== Form ===== */
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
 }
 
 label {
   font-size: 13px;
   color: var(--muted);
-  margin-bottom: 4px;
+  margin-bottom: 6px;
   display: block;
 }
 
 input {
   width: 100%;
-  padding: 10px 12px;
-  border-radius: 8px;
+  padding: 12px;
+  border-radius: 10px;
   border: 1px solid var(--border);
-  font-size: 14px;
+  font-size: 15px;
+}
+
+/* ===== Upload ===== */
+.upload-box {
+  border: 2px dashed var(--border);
+  border-radius: 14px;
+  padding: 28px;
+  text-align: center;
+  background: #fafafa;
+}
+
+.upload-box input {
+  border: none;
+  padding: 0;
+}
+
+/* ===== Buttons ===== */
+.actions {
+  display: flex;
+  gap: 16px;
+  margin-top: 24px;
 }
 
 button {
-  background: var(--primary);
-  color: #fff;
+  border-radius: 12px;
+  padding: 14px 20px;
+  font-size: 15px;
   border: none;
-  border-radius: 10px;
-  padding: 12px 16px;
-  font-size: 16px;
   cursor: pointer;
 }
 
-button.secondary {
-  background: #e5e7eb;
-  color: #111827;
+button.primary {
+  background: var(--primary);
+  color: #fff;
 }
 
-button:hover { opacity: .9; }
-
-/* ===== Table ===== */
-table { width: 100%; border-collapse: collapse; }
-th, td {
-  padding: 12px;
-  border-bottom: 1px solid var(--border);
-  text-align: left;
-  font-size: 14px;
+button.accent {
+  background: var(--accent);
+  color: #fff;
 }
-th { color: var(--muted); font-weight: 600; }
+
+button:hover {
+  opacity: .9;
+}
+
+/* ===== Task Cards ===== */
+.task-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.task-card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  background: #fff;
+}
+
+.task-card h4 {
+  margin: 0 0 8px;
+}
 
 .progress {
   background: #e5e7eb;
   border-radius: 999px;
   height: 10px;
   overflow: hidden;
-}
-.progress-bar {
-  background: var(--success);
-  height: 100%;
+  margin: 10px 0;
 }
 
-.copy { cursor: pointer; font-size: 18px; }
+.progress-bar {
+  background: var(--accent);
+  height: 100%;
+}
 
 /* ===== Modal ===== */
 .modal {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,.5);
+  background: rgba(0,0,0,.45);
   display: none;
   align-items: center;
   justify-content: center;
@@ -115,12 +166,14 @@ th { color: var(--muted); font-weight: 600; }
 
 .modal-box {
   background: #fff;
-  border-radius: 14px;
-  padding: 24px;
+  border-radius: 16px;
+  padding: 28px;
   width: 420px;
 }
 
-.warn { color: var(--warn); }
+.warn {
+  color: var(--warn);
+}
 </style>
 </head>
 
@@ -132,153 +185,93 @@ th { color: var(--muted); font-weight: 600; }
   <p>智慧班表簽核系統</p>
 </header>
 
-<!-- ================= 新任務建立 ================= -->
+<!-- ===== 建立任務 ===== -->
 <div class="card">
   <h3>📌 建立新簽核任務</h3>
 
   <div class="form-grid">
     <div>
-      <label>建立任務者</label>
-      <input id="creator" />
-    </div>
-
-    <div>
-      <label>任務密碼</label>
-      <input id="password" type="password" />
+      <label>任務建立者</label>
+      <input placeholder="例如：王小明">
     </div>
 
     <div>
       <label>單位別</label>
-      <input id="unit" />
+      <input placeholder="例如：急診部">
     </div>
 
     <div>
       <label>簽核月份</label>
-      <input id="month" type="month" />
+      <input type="month">
     </div>
 
     <div>
-      <label>班表 Excel</label>
-      <input id="file" type="file" accept=".xls,.xlsx" />
+      <label>設定密碼</label>
+      <input type="password">
     </div>
   </div>
 
   <br>
-  <button onclick="validateTask()">上傳並檢查</button>
+
+  <div class="upload-box">
+    <strong>📄 上傳班表 Excel</strong>
+    <p style="color:var(--muted)">此檔案將用於辨識待簽核人員</p>
+    <input type="file" accept=".xls,.xlsx">
+  </div>
+
+  <div class="actions">
+    <button class="accent" onclick="openModal()">🔍 查核任務辨識</button>
+    <button class="primary">建立簽核任務</button>
+  </div>
 </div>
 
-<!-- ================= 任務清單（保留原本） ================= -->
+<!-- ===== 任務 Demo 卡片 ===== -->
 <div class="card">
-  <h3>📊 任務清單</h3>
-  <table>
-    <thead>
-      <tr>
-        <th>任務編碼</th>
-        <th>單位</th>
-        <th>月份</th>
-        <th>完成度</th>
-        <th>連結</th>
-      </tr>
-    </thead>
-    <tbody id="taskTable"></tbody>
-  </table>
+  <h3>📊 任務清單（Demo）</h3>
+
+  <div class="task-grid">
+    <div class="task-card">
+      <h4>SHIFT-2026-001</h4>
+      <div>急診部｜2026-02</div>
+      <div class="progress"><div class="progress-bar" style="width:80%"></div></div>
+      完成度 80%
+    </div>
+
+    <div class="task-card">
+      <h4>SHIFT-2026-002</h4>
+      <div>內科｜2026-03</div>
+      <div class="progress"><div class="progress-bar" style="width:45%"></div></div>
+      完成度 45%
+    </div>
+
+    <div class="task-card">
+      <h4>SHIFT-2026-003</h4>
+      <div>外科｜2026-04</div>
+      <div class="progress"><div class="progress-bar" style="width:100%"></div></div>
+      完成度 100%
+    </div>
+  </div>
 </div>
 
 </div>
 
-<!-- ================= 查核 Modal ================= -->
+<!-- ===== 查核 Modal ===== -->
 <div class="modal" id="modal">
   <div class="modal-box">
-    <h3>📄 班表初步查核</h3>
-    <div id="checkResult"></div>
+    <h3>🔍 任務辨識結果</h3>
+    ✔ 偵測到待簽核人數：32 人<br>
+    <div class="warn">⚠ 發現 2 筆員編重複</div>
     <br>
-    <button onclick="createTask()">確認建立</button>
-    <button class="secondary" onclick="closeModal()">取消</button>
+    <button class="primary" onclick="closeModal()">確認</button>
   </div>
 </div>
 
 <script>
-/* ===== 假資料 ===== */
-const tasks = [
-  { taskId:"SHIFT-2026-001", unit:"急診部", month:"2026-02", progress:80, url:"https://example.com" }
-];
-const table = document.getElementById("taskTable");
-tasks.forEach(t => {
-  table.innerHTML += `
-    <tr>
-      <td>${t.taskId}</td>
-      <td>${t.unit}</td>
-      <td>${t.month}</td>
-      <td>
-        <div class="progress"><div class="progress-bar" style="width:${t.progress}%"></div></div>
-        ${t.progress}%
-      </td>
-      <td><span class="copy" onclick="copy('${t.url}')">📋</span></td>
-    </tr>`;
-});
-
-/* ===== 查核 ===== */
-let cachedFormData = null;
-
-function validateTask() {
-  const file = document.getElementById("file").files[0];
-  if (!file) return alert("請上傳 Excel");
-
-  const fd = buildFormData("validate");
-  cachedFormData = fd;
-
-  fetch("https://你的-n8n-domain/webhook/shift-upload", {
-    method: "POST",
-    body: fd
-  })
-  .then(r => r.json())
-  .then(showResult);
-}
-
-function showResult(data) {
-  let html = `✔ 待簽核人數：${data.signerCount} 人<br>`;
-  if (data.emptyName > 0)
-    html += `<div class="warn">⚠ 姓名空白：${data.emptyName} 筆</div>`;
-  if (data.duplicateId > 0)
-    html += `<div class="warn">⚠ 員編重複：${data.duplicateId} 筆</div>`;
-
-  document.getElementById("checkResult").innerHTML = html;
+function openModal() {
   document.getElementById("modal").style.display = "flex";
 }
-
-/* ===== 正式建立 ===== */
-function createTask() {
-  cachedFormData.set("mode", "create");
-
-  fetch("https://你的-n8n-domain/webhook/shift-upload", {
-    method: "POST",
-    body: cachedFormData
-  })
-  .then(r => r.json())
-  .then(data => {
-    alert("任務建立完成：" + data.taskId);
-    closeModal();
-  });
-}
-
 function closeModal() {
   document.getElementById("modal").style.display = "none";
-}
-
-function buildFormData(mode) {
-  const fd = new FormData();
-  fd.append("mode", mode);
-  fd.append("creator", creator.value);
-  fd.append("password", password.value);
-  fd.append("unit", unit.value);
-  fd.append("month", month.value);
-  fd.append("schedule", document.getElementById("file").files[0]);
-  return fd;
-}
-
-function copy(text) {
-  navigator.clipboard.writeText(text);
-  alert("連結已複製");
 }
 </script>
 
