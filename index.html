@@ -7,8 +7,8 @@
 
 <style>
 :root {
-  --primary: #374151;      /* 石墨灰 */
-  --accent: #059669;       /* 醫療綠 */
+  --primary: #374151;   /* 石墨灰 */
+  --accent: #059669;    /* 醫療綠 */
   --bg: #f3f4f6;
   --card: #ffffff;
   --text: #111827;
@@ -37,7 +37,6 @@ header {
 header h1 {
   margin: 0;
   font-size: 30px;
-  letter-spacing: .5px;
 }
 
 header p {
@@ -89,11 +88,6 @@ input {
   background: #fafafa;
 }
 
-.upload-box input {
-  border: none;
-  padding: 0;
-}
-
 /* ===== Buttons ===== */
 .actions {
   display: flex;
@@ -123,22 +117,22 @@ button:hover {
   opacity: .9;
 }
 
-/* ===== Task Cards ===== */
-.task-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
+/* ===== Table ===== */
+table {
+  width: 100%;
+  border-collapse: collapse;
 }
 
-.task-card {
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 18px;
-  background: #fff;
+th, td {
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  text-align: left;
 }
 
-.task-card h4 {
-  margin: 0 0 8px;
+th {
+  color: var(--muted);
+  font-weight: 600;
 }
 
 .progress {
@@ -146,12 +140,17 @@ button:hover {
   border-radius: 999px;
   height: 10px;
   overflow: hidden;
-  margin: 10px 0;
+  margin-bottom: 6px;
 }
 
 .progress-bar {
   background: var(--accent);
   height: 100%;
+}
+
+.copy {
+  cursor: pointer;
+  font-size: 18px;
 }
 
 /* ===== Modal ===== */
@@ -185,7 +184,7 @@ button:hover {
   <p>智慧班表簽核系統</p>
 </header>
 
-<!-- ===== 建立任務 ===== -->
+<!-- ===== 建立新任務 ===== -->
 <div class="card">
   <h3>📌 建立新簽核任務</h3>
 
@@ -225,32 +224,55 @@ button:hover {
   </div>
 </div>
 
-<!-- ===== 任務 Demo 卡片 ===== -->
+<!-- ===== 任務清單（表格版） ===== -->
 <div class="card">
-  <h3>📊 任務清單（Demo）</h3>
+  <h3>📊 任務清單</h3>
 
-  <div class="task-grid">
-    <div class="task-card">
-      <h4>SHIFT-2026-001</h4>
-      <div>急診部｜2026-02</div>
-      <div class="progress"><div class="progress-bar" style="width:80%"></div></div>
-      完成度 80%
-    </div>
+  <table>
+    <thead>
+      <tr>
+        <th>任務編碼</th>
+        <th>單位</th>
+        <th>月份</th>
+        <th>完成度</th>
+        <th>連結</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>SHIFT-2026-001</td>
+        <td>急診部</td>
+        <td>2026-02</td>
+        <td>
+          <div class="progress"><div class="progress-bar" style="width:80%"></div></div>
+          80%
+        </td>
+        <td><span class="copy" onclick="copyLink()">📋</span></td>
+      </tr>
 
-    <div class="task-card">
-      <h4>SHIFT-2026-002</h4>
-      <div>內科｜2026-03</div>
-      <div class="progress"><div class="progress-bar" style="width:45%"></div></div>
-      完成度 45%
-    </div>
+      <tr>
+        <td>SHIFT-2026-002</td>
+        <td>內科</td>
+        <td>2026-03</td>
+        <td>
+          <div class="progress"><div class="progress-bar" style="width:45%"></div></div>
+          45%
+        </td>
+        <td><span class="copy" onclick="copyLink()">📋</span></td>
+      </tr>
 
-    <div class="task-card">
-      <h4>SHIFT-2026-003</h4>
-      <div>外科｜2026-04</div>
-      <div class="progress"><div class="progress-bar" style="width:100%"></div></div>
-      完成度 100%
-    </div>
-  </div>
+      <tr>
+        <td>SHIFT-2026-003</td>
+        <td>外科</td>
+        <td>2026-04</td>
+        <td>
+          <div class="progress"><div class="progress-bar" style="width:100%"></div></div>
+          100%
+        </td>
+        <td><span class="copy" onclick="copyLink()">📋</span></td>
+      </tr>
+    </tbody>
+  </table>
 </div>
 
 </div>
@@ -261,7 +283,7 @@ button:hover {
     <h3>🔍 任務辨識結果</h3>
     ✔ 偵測到待簽核人數：32 人<br>
     <div class="warn">⚠ 發現 2 筆員編重複</div>
-    <br>
+    <br><br>
     <button class="primary" onclick="closeModal()">確認</button>
   </div>
 </div>
@@ -272,6 +294,9 @@ function openModal() {
 }
 function closeModal() {
   document.getElementById("modal").style.display = "none";
+}
+function copyLink() {
+  alert("（Demo）任務連結已複製");
 }
 </script>
 
