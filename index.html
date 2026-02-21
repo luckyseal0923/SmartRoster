@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<title>班表上傳系統</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<style>
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Noto Sans TC", sans-serif;
+  background: #f5f6f7;
+  padding: 32px;
+}
+
+.card {
+  max-width: 480px;
+  margin: auto;
+  background: #fff;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.1);
+}
+
+button {
+  width: 100%;
+  padding: 12px;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.result {
+  margin-top: 20px;
+  background: #f1f5f9;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+</style>
+</head>
+
+<body>
+<div class="card">
+  <h2>📅 單位班表上傳</h2>
+
+  <input type="file" id="file" accept=".xls,.xlsx" />
+  <br /><br />
+
+  <button onclick="upload()">上傳並產生任務</button>
+
+  <div id="result" class="result" style="display:none;"></div>
+</div>
+
+<script>
+function upload() {
+  const file = document.getElementById("file").files[0];
+  if (!file) {
+    alert("請選擇 Excel 檔案");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("schedule", file);
+
+  fetch("/upload", {
+    method: "POST",
+    body: formData
+  })
+  .then(res => res.json())
+  .then(data => {
+    document.getElementById("result").style.display = "block";
+    document.getElementById("result").innerHTML = `
+      <strong>任務編碼：</strong>${data.taskId}<br/>
+      <strong>任務連結：</strong><br/>
+      <a href="${data.url}" target="_blank">${data.url}</a>
+    `;
+  });
+}
+</script>
+</body>
+</html>
