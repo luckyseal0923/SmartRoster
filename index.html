@@ -6,10 +6,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
 <style>
-:root {
-  --primary:#374151;
-  --accent:#059669;
-  --bg:#eef2f0;           /* 淡淡背景 */
+:root{
+  --primary:#374151;      /* 石墨灰 */
+  --accent:#059669;       /* 醫療綠 */
+  --bg:#eef2f0;           /* 淡背景 */
   --card:#ffffff;
   --text:#111827;
   --muted:#6b7280;
@@ -22,6 +22,7 @@
 body{
   font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC",sans-serif;
   background:var(--bg);
+  color:var(--text);
   margin:0;
   padding:32px;
 }
@@ -40,13 +41,22 @@ header p{margin-top:6px;color:var(--muted);}
   margin-bottom:32px;
 }
 
+h3{margin-top:0;}
+
+/* ===== 表單 ===== */
 .form-grid{
   display:grid;
   grid-template-columns:1fr 1fr;
-  gap:16px 20px;
+  gap:14px 20px;
 }
 
-label{font-size:13px;color:var(--muted);margin-bottom:4px;display:block;}
+label{
+  font-size:13px;
+  color:var(--muted);
+  margin-bottom:4px;
+  display:block;
+}
+
 input{
   width:100%;
   padding:10px;
@@ -64,6 +74,7 @@ input{
   background:#fafafa;
 }
 
+/* ===== 按鈕 ===== */
 .actions{
   display:flex;
   gap:16px;
@@ -82,6 +93,37 @@ button.primary{background:var(--primary);color:#fff;}
 button.accent{background:var(--accent);color:#fff;}
 button:disabled{opacity:.5;cursor:not-allowed;}
 
+/* ===== 任務清單 table ===== */
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+
+th,td{
+  padding:14px 12px;
+  border-bottom:1px solid var(--border);
+  font-size:14px;
+  text-align:left;
+}
+
+th{color:var(--muted);font-weight:600;}
+
+.progress{
+  background:#e5e7eb;
+  border-radius:999px;
+  height:10px;
+  overflow:hidden;
+  margin-bottom:6px;
+}
+
+.progress-bar{
+  background:var(--accent);
+  height:100%;
+}
+
+.copy{cursor:pointer;font-size:18px;}
+
+/* ===== Modal ===== */
 .modal{
   position:fixed;
   inset:0;
@@ -155,9 +197,60 @@ button:disabled{opacity:.5;cursor:not-allowed;}
   </div>
 </div>
 
+<!-- ===== 任務清單（舊功能完整保留） ===== -->
+<div class="card">
+  <h3>📊 任務清單</h3>
+
+  <table>
+    <thead>
+      <tr>
+        <th>任務編碼</th>
+        <th>單位</th>
+        <th>月份</th>
+        <th>完成度</th>
+        <th>連結</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>SHIFT-2026-001</td>
+        <td>急診部</td>
+        <td>2026-02</td>
+        <td>
+          <div class="progress"><div class="progress-bar" style="width:80%"></div></div>
+          80%
+        </td>
+        <td><span class="copy" onclick="copyLink()">📋</span></td>
+      </tr>
+
+      <tr>
+        <td>SHIFT-2026-002</td>
+        <td>內科</td>
+        <td>2026-03</td>
+        <td>
+          <div class="progress"><div class="progress-bar" style="width:45%"></div></div>
+          45%
+        </td>
+        <td><span class="copy" onclick="copyLink()">📋</span></td>
+      </tr>
+
+      <tr>
+        <td>SHIFT-2026-003</td>
+        <td>外科</td>
+        <td>2026-04</td>
+        <td>
+          <div class="progress"><div class="progress-bar" style="width:100%"></div></div>
+          100%
+        </td>
+        <td><span class="copy" onclick="copyLink()">📋</span></td>
+      </tr>
+    </tbody>
+  </table>
 </div>
 
-<!-- ===== 查核 Modal ===== -->
+</div>
+
+<!-- ===== 查核 Modal（Demo） ===== -->
 <div class="modal" id="modal">
   <div class="modal-box">
     <h3>🔍 任務辨識結果</h3>
@@ -170,16 +263,19 @@ button:disabled{opacity:.5;cursor:not-allowed;}
 <script>
 const createBtn = document.getElementById("createBtn");
 
+/* ===== 即時欄位檢查 ===== */
 function validateForm(){
   const now = new Date();
-  const m = document.getElementById("month").value;
-  const monthOK = m && new Date(m+"-01") >= new Date(now.getFullYear(), now.getMonth(),1);
+  const m = month.value;
+  const monthOK = m && new Date(m+"-01") >= new Date(now.getFullYear(),now.getMonth(),1);
+
   const ok =
     creator.value &&
     staffId.value &&
     unit.value &&
     monthOK &&
     password.value.length >= 6;
+
   createBtn.disabled = !ok;
 }
 
@@ -187,11 +283,11 @@ function validateForm(){
   document.getElementById(id).addEventListener("input",validateForm);
 });
 
+/* ===== 查核辨識（Demo） ===== */
 function runCheck(){
   const modal = document.getElementById("modal");
   const content = document.getElementById("checkContent");
 
-  // === Demo 虛擬結果 ===
   const status = ["ok","warn","bad"][Math.floor(Math.random()*3)];
 
   if(status==="ok"){
@@ -223,14 +319,21 @@ function runCheck(){
   modal.style.display="flex";
 }
 
+/* ===== 建立任務（Demo loading） ===== */
 function confirmCreate(){
   createBtn.textContent="處理中…";
   createBtn.disabled=true;
+
   setTimeout(()=>{
     createBtn.textContent="已建立";
     alert("（Demo）任務建立完成");
     document.getElementById("modal").style.display="none";
   },1200);
+}
+
+/* ===== 複製連結（舊功能） ===== */
+function copyLink(){
+  alert("（Demo）任務連結已複製");
 }
 </script>
 
