@@ -288,35 +288,63 @@ function runCheck(){
   const modal = document.getElementById("modal");
   const content = document.getElementById("checkContent");
 
-  const status = ["ok","warn","bad"][Math.floor(Math.random()*3)];
-
-  if(status==="ok"){
-    content.innerHTML = `
-      <div class="status-ok">✔ 查核通過</div>
-      待簽核人數：32 人
-    `;
-    createBtn.disabled = false;
+  const fileInput = document.querySelector('input[type="file"]');
+  if (!fileInput.files.length) {
+    alert("請先上傳班表 Excel");
+    return;
   }
 
-  if(status==="warn"){
-    content.innerHTML = `
-      <div class="status-warn">⚠ 發現異常（可建立）</div>
-      待簽核人數：32 人<br>
-      • 員編重複：A123、A128<br>
-      • 姓名空白：第 12 列
-    `;
-    createBtn.disabled = false;
-  }
+  // 建立 FormData
+  const fd = new FormData();
+  fd.append("file", fileInput.files[0]);
+  fd.append("creator", creator.value);
+  fd.append("unit", unit.value);
+  fd.append("month", month.value);
 
-  if(status==="bad"){
+  content.innerHTML = "⏳ 辨識中，請稍候…";
+  modal.style.display = "flex";
+
+  fetch("https://your-n8n-domain/webhook/roster-check", {
+    method: "POST",
+    body: fd
+  })
+  .then(res => res.json())
+  .then(data => {
+    // === OK ===
+    if (data.status === "ok") {
+      content.innerHTML = `
+        <div class="status-ok">✔ 查核通過</div>
+        待簽核人數：${data.signerCount} 人
+      `;
+      createBtn.disabled = false;
+    }
+
+    // === WARN ===
+    if (data.status === "warn") {
+      content.innerHTML = `
+        <div class="status-warn">⚠ 發現異常（可建立）</div>
+        待簽核人數：${data.signerCount} 人<br>
+        ${data.warnings.map(w => "• " + w).join("<br>")}
+      `;
+      createBtn.disabled = false;
+    }
+
+    // === BAD ===
+    if (data.status === "bad") {
+      content.innerHTML = `
+        <div class="status-bad">❌ 查核失敗</div>
+        ${data.message}
+      `;
+      createBtn.disabled = true;
+    }
+  })
+  .catch(err => {
     content.innerHTML = `
-      <div class="status-bad">❌ 查核失敗</div>
-      無法辨識待簽核名單，請重新上傳
+      <div class="status-bad">❌ 系統錯誤</div>
+      無法連線至辨識服務
     `;
     createBtn.disabled = true;
-  }
-
-  modal.style.display="flex";
+  });
 }
 
 /* ===== 建立任務（Demo loading） ===== */
