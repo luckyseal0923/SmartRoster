@@ -303,68 +303,66 @@ function validateForm(){
   document.getElementById(id).addEventListener("input",validateForm);
 });
 
-/* ===== 查核辨識（Demo） ===== */
+/* ===== 查核辨識（正確 async 版本） ===== */
 async function runCheck(){
+  const modal = document.getElementById("modal");
+  const content = document.getElementById("checkContent");
+
   const fileInput = document.querySelector('input[type="file"]');
   if (!fileInput.files.length) {
-    alert("請先上傳班表");
+    alert("請先上傳班表 Excel");
     return;
   }
 
-  const formData = new FormData();
-  formData.append("file", fileInput.files[0]);
+  const fd = new FormData();
+  fd.append("file", fileInput.files[0]);
 
-  const res = await fetch("https://chihwei-n8n.zeabur.app/webhook/roster-check", {
-    method: "POST",
-    body: formData
-  });
+  content.innerHTML = "⏳ 辨識中，請稍候…";
+  modal.style.display = "flex";
 
-  const data = await res.json();
-  const content = document.getElementById("checkContent");
-  const listBox = document.getElementById("signerList");
+  try {
+    const res = await fetch("https://chihwei-n8n.zeabur.app/webhook/roster-check", {
+      method: "POST",
+      body: fd
+    });
 
-  if (data.status !== "ok") {
-    content.innerHTML = `<div class="status-bad">❌ ${data.message}</div>`;
-    createBtn.disabled = true;
-    modal.style.display="flex";
-    return;
-  }
+    const data = await res.json();
 
-  detectedSigners = data.signers;
-  manualSigners = [];
-
-  content.innerHTML = `
-    <div class="status-ok">✔ 查核通過</div>
-    系統辨識簽核人數：${data.signerCount} 人
-  `;
-
-  renderSignerList();
-  createBtn.disabled = false;
-  modal.style.display="flex";
-}
-
-    // === BAD ===
-    if (data.status === "bad") {
+    if (data.status !== "ok") {
       content.innerHTML = `
-        <div class="status-bad">❌ 查核失敗</div>
-        ${data.message}
+        <div class="status-bad">❌ ${data.message || "查核失敗"}</div>
       `;
       createBtn.disabled = true;
+      return;
     }
-  })
-  .catch(err => {
+
+    detectedSigners = data.signers || [];
+    manualSigners = [];
+
+    content.innerHTML = `
+      <div class="status-ok">✔ 查核通過</div>
+      系統辨識簽核人數：${data.signerCount} 人
+    `;
+
+    renderSignerList();
+    createBtn.disabled = false;
+
+  } catch (err) {
     content.innerHTML = `
       <div class="status-bad">❌ 系統錯誤</div>
       無法連線至辨識服務
     `;
     createBtn.disabled = true;
-  });
+  }
 }
-  function renderSignerList(){
+
+/* ===== 顯示辨識成功清單 ===== */
+function renderSignerList(){
   const box = document.getElementById("signerList");
 
-  let html = `<h4>📋 已辨識簽核人</h4><table style="width:100%;margin-top:8px;">`;
-  html += `<tr><th>員工編號</th><th>姓名</th></tr>`;
+  let html = `<h4>📋 已辨識簽核人</h4>
+    <table style="width:100%;margin-top:8px;">
+      <tr><th>員工編號</th><th>姓名</th></tr>`;
 
   detectedSigners.forEach(s=>{
     html += `<tr><td>${s.staffId}</td><td>${s.name || "-"}</td></tr>`;
@@ -373,7 +371,9 @@ async function runCheck(){
   html += `</table>`;
   box.innerHTML = html;
 }
-  function addManualSigner(){
+
+/* ===== 手動補登 ===== */
+function addManualSigner(){
   const id = manualStaffId.value.trim();
   const name = manualName.value.trim();
 
@@ -382,7 +382,6 @@ async function runCheck(){
     return;
   }
 
-  // 防止重複
   if (
     detectedSigners.some(s=>s.staffId===id) ||
     manualSigners.some(s=>s.staffId===id)
@@ -402,14 +401,14 @@ function renderManualList(){
   const ul = document.getElementById("manualList");
   ul.innerHTML = "";
 
-  manualSigners.forEach((s,i)=>{
+  manualSigners.forEach(s=>{
     const li = document.createElement("li");
     li.textContent = `${s.staffId} ${s.name || ""}`;
     ul.appendChild(li);
   });
 }
 
-/* ===== 建立任務（Demo loading） ===== */
+/* ===== 建立任務（Demo） ===== */
 function confirmCreate(){
   createBtn.textContent="處理中…";
   createBtn.disabled=true;
@@ -421,7 +420,7 @@ function confirmCreate(){
   },1200);
 }
 
-/* ===== 複製連結（舊功能） ===== */
+/* ===== 複製連結 ===== */
 function copyLink(){
   alert("（Demo）任務連結已複製");
 }
