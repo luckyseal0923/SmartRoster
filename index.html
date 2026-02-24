@@ -356,19 +356,47 @@ async function runCheck(){
   }
 }
 
+  function removeDetected(index){
+  if (!confirm("確定要移除此簽核人？")) return;
+  detectedSigners.splice(index, 1);
+  renderSignerList();
+}
+  function removeManual(index){
+  manualSigners.splice(index, 1);
+  renderManualList();
+}
 /* ===== 顯示辨識成功清單 ===== */
 function renderSignerList(){
   const box = document.getElementById("signerList");
 
-  let html = `<h4>📋 已辨識簽核人</h4>
-    <table style="width:100%;margin-top:8px;">
-      <tr><th>員工編號</th><th>姓名</th></tr>`;
+  let html = `
+    <h4>📋 已辨識簽核人</h4>
+    <div style="max-height:260px;overflow:auto;border:1px solid #e5e7eb;border-radius:8px;">
+      <table style="width:100%;font-size:14px;">
+        <tr>
+          <th style="text-align:left;padding:6px;">員工編號</th>
+          <th style="text-align:left;padding:6px;">姓名</th>
+          <th style="width:40px;"></th>
+        </tr>
+  `;
 
-  detectedSigners.forEach(s=>{
-    html += `<tr><td>${s.staffId}</td><td>${s.name || "-"}</td></tr>`;
+  detectedSigners.forEach((s,idx)=>{
+    html += `
+      <tr>
+        <td style="padding:6px;">${s.staffId}</td>
+        <td style="padding:6px;">${s.name || "-"}</td>
+        <td style="padding:6px;">
+          <button onclick="removeDetected(${idx})" style="border:none;background:none;color:#b91c1c;cursor:pointer;">✖</button>
+        </td>
+      </tr>
+    `;
   });
 
-  html += `</table>`;
+  html += `
+      </table>
+    </div>
+  `;
+
   box.innerHTML = html;
 }
 
@@ -401,9 +429,17 @@ function renderManualList(){
   const ul = document.getElementById("manualList");
   ul.innerHTML = "";
 
-  manualSigners.forEach(s=>{
+  manualSigners.forEach((s,idx)=>{
     const li = document.createElement("li");
-    li.textContent = `${s.staffId} ${s.name || ""}`;
+    li.style.display="flex";
+    li.style.justifyContent="space-between";
+    li.style.alignItems="center";
+    li.style.marginBottom="6px";
+
+    li.innerHTML = `
+      <span>${s.staffId} ${s.name || ""}</span>
+      <button onclick="removeManual(${idx})" style="border:none;background:none;color:#b91c1c;cursor:pointer;">✖</button>
+    `;
     ul.appendChild(li);
   });
 }
