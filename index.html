@@ -317,8 +317,11 @@ th{color:var(--muted);font-weight:600;}
     <br>
 <div style="display:flex;justify-content:flex-end;gap:12px;">
   <button class="secondary" onclick="cancelCreate()">取消</button>
-  <button class="primary" onclick="confirmCreate()">建立任務</button>
-</div>  </div>
+<button id="createBtn"
+        class="primary"
+        onclick="confirmCreate()">
+  建立任務
+</button></div>  </div>
 </div>
 
 <script>
@@ -531,16 +534,73 @@ function renderManualList(){
   });
 }
 
-/* ===== 建立任務（Demo） ===== */
-function confirmCreate(){
-  createBtn.textContent="處理中…";
-  createBtn.disabled=true;
+/* ===== 建立任務（正式版，呼叫 roster-create） ===== */
+async function confirmCreate(){
 
-  setTimeout(()=>{
-    createBtn.textContent="已建立";
-    alert("（Demo）任務建立完成");
-    document.getElementById("modal").style.display="none";
-  },1200);
+  if (!fileInput.files.length) {
+    alert("找不到原始 Excel 檔案");
+    return;
+  }
+
+  const createBtn = document.getElementById("createBtn");
+  createBtn.textContent = "建立中…";
+  createBtn.disabled = true;
+
+  try {
+    const fd = new FormData();
+
+    // ===== 基本任務資料 =====
+    fd.append("creator", creator.value);
+    fd.append("creator_staff_id", staffId.value);
+    fd.append("unit", unit.value);
+    fd.append("sign_month", month.value);
+    fd.append("password", password.value);
+
+    // ===== 簽核人資料 =====
+    fd.append("detected_signers", JSON.stringify(detectedSigners));
+    fd.append("manual_signers", JSON.stringify(manualSigners));
+
+    // ===== Excel 原始檔 =====
+    fd.append("file", fileInput.files[0]);
+
+    const res = await fetch(
+      "https://chihwei-n8n.zeabur.app/webhook/roster-create",
+      {
+        method: "POST",
+        body: fd
+      }
+    );
+
+    // ✅ 防呆：先讀 text
+    const text = await res.text();
+    let data;
+
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      console.error("⚠️ 非 JSON 回傳：", text);
+      throw new Error("後端回傳格式錯誤");
+    }
+
+    if (!res.ok || data.status !== "ok") {
+      throw new Error(data.message || "任務建立失敗");
+    }
+
+    alert(`✅ 任務建立完成\n任務編碼：${data.task_id}`);
+
+    // 關閉 Modal
+    document.getElementById("modal").style.display = "none";
+
+    // （可選）之後這裡可以 reload 任務清單
+    // location.reload();
+
+  } catch (err) {
+    console.error(err);
+    alert(`❌ 建立任務失敗\n${err.message || "系統錯誤"}`);
+  } finally {
+    createBtn.textContent = "建立任務";
+    createBtn.disabled = false;
+  }
 }
 
 /* ===== 複製連結 ===== */
