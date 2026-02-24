@@ -254,13 +254,33 @@ th{color:var(--muted);font-weight:600;}
 <div class="modal" id="modal">
   <div class="modal-box">
     <h3>🔍 任務辨識結果</h3>
+
+    <!-- 系統查核狀態（原本就有） -->
     <div id="checkContent"></div>
+
+    <!-- 系統成功辨識清單 -->
+    <div id="signerList" style="margin-top:16px;"></div>
+
+    <hr style="margin:20px 0;">
+
+    <!-- 手動補登 -->
+    <h4>➕ 手動補登簽核人</h4>
+    <div style="display:flex;gap:8px;">
+      <input id="manualStaffId" placeholder="員工編號">
+      <input id="manualName" placeholder="姓名（選填）">
+      <button onclick="addManualSigner()">新增</button>
+    </div>
+
+    <ul id="manualList" style="margin-top:10px;"></ul>
+
     <br>
     <button class="primary" onclick="confirmCreate()">確認</button>
   </div>
 </div>
 
 <script>
+let detectedSigners = [];
+let manualSigners = [];
 const createBtn = document.getElementById("createBtn");
 
 /* ===== 即時欄位檢查 ===== */
@@ -284,50 +304,44 @@ function validateForm(){
 });
 
 /* ===== 查核辨識（Demo） ===== */
-function runCheck(){
-  const modal = document.getElementById("modal");
-  const content = document.getElementById("checkContent");
-
+async function runCheck(){
   const fileInput = document.querySelector('input[type="file"]');
   if (!fileInput.files.length) {
-    alert("請先上傳班表 Excel");
+    alert("請先上傳班表");
     return;
   }
 
-  // 建立 FormData
-  const fd = new FormData();
-  fd.append("file", fileInput.files[0]);
-  fd.append("creator", creator.value);
-  fd.append("unit", unit.value);
-  fd.append("month", month.value);
+  const formData = new FormData();
+  formData.append("file", fileInput.files[0]);
 
-  content.innerHTML = "⏳ 辨識中，請稍候…";
-  modal.style.display = "flex";
-
-  fetch("https://chihwei-n8n.zeabur.app/webhook/roster-check", {
+  const res = await fetch("https://chihwei-n8n.zeabur.app/webhook/roster-check", {
     method: "POST",
-    body: fd
-  })
-  .then(res => res.json())
-  .then(data => {
-    // === OK ===
-    if (data.status === "ok") {
-      content.innerHTML = `
-        <div class="status-ok">✔ 查核通過</div>
-        待簽核人數：${data.signerCount} 人
-      `;
-      createBtn.disabled = false;
-    }
+    body: formData
+  });
 
-    // === WARN ===
-    if (data.status === "warn") {
-      content.innerHTML = `
-        <div class="status-warn">⚠ 發現異常（可建立）</div>
-        待簽核人數：${data.signerCount} 人<br>
-        ${data.warnings.map(w => "• " + w).join("<br>")}
-      `;
-      createBtn.disabled = false;
-    }
+  const data = await res.json();
+  const content = document.getElementById("checkContent");
+  const listBox = document.getElementById("signerList");
+
+  if (data.status !== "ok") {
+    content.innerHTML = `<div class="status-bad">❌ ${data.message}</div>`;
+    createBtn.disabled = true;
+    modal.style.display="flex";
+    return;
+  }
+
+  detectedSigners = data.signers;
+  manualSigners = [];
+
+  content.innerHTML = `
+    <div class="status-ok">✔ 查核通過</div>
+    系統辨識簽核人數：${data.signerCount} 人
+  `;
+
+  renderSignerList();
+  createBtn.disabled = false;
+  modal.style.display="flex";
+}
 
     // === BAD ===
     if (data.status === "bad") {
@@ -344,6 +358,54 @@ function runCheck(){
       無法連線至辨識服務
     `;
     createBtn.disabled = true;
+  });
+}
+  function renderSignerList(){
+  const box = document.getElementById("signerList");
+
+  let html = `<h4>📋 已辨識簽核人</h4><table style="width:100%;margin-top:8px;">`;
+  html += `<tr><th>員工編號</th><th>姓名</th></tr>`;
+
+  detectedSigners.forEach(s=>{
+    html += `<tr><td>${s.staffId}</td><td>${s.name || "-"}</td></tr>`;
+  });
+
+  html += `</table>`;
+  box.innerHTML = html;
+}
+  function addManualSigner(){
+  const id = manualStaffId.value.trim();
+  const name = manualName.value.trim();
+
+  if (!id) {
+    alert("員工編號必填");
+    return;
+  }
+
+  // 防止重複
+  if (
+    detectedSigners.some(s=>s.staffId===id) ||
+    manualSigners.some(s=>s.staffId===id)
+  ) {
+    alert("此員工編號已存在");
+    return;
+  }
+
+  manualSigners.push({ staffId:id, name });
+  manualStaffId.value="";
+  manualName.value="";
+
+  renderManualList();
+}
+
+function renderManualList(){
+  const ul = document.getElementById("manualList");
+  ul.innerHTML = "";
+
+  manualSigners.forEach((s,i)=>{
+    const li = document.createElement("li");
+    li.textContent = `${s.staffId} ${s.name || ""}`;
+    ul.appendChild(li);
   });
 }
 
