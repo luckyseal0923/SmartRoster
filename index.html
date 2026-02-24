@@ -282,7 +282,11 @@ th{color:var(--muted);font-weight:600;}
 let detectedSigners = [];
 let manualSigners = [];
 const createBtn = document.getElementById("createBtn");
-
+  
+/* ===== 分頁狀態 ===== */
+let signerPage = 1;
+const SIGNERS_PER_PAGE = 10; // 🔧 一頁幾個人（10 / 15 / 20 都可以）
+  
 /* ===== 即時欄位檢查 ===== */
 function validateForm(){
   const now = new Date();
@@ -369,24 +373,37 @@ async function runCheck(){
 function renderSignerList(){
   const box = document.getElementById("signerList");
 
+  const total = detectedSigners.length;
+  const totalPages = Math.ceil(total / SIGNERS_PER_PAGE);
+  if (signerPage > totalPages) signerPage = totalPages || 1;
+
+  const start = (signerPage - 1) * SIGNERS_PER_PAGE;
+  const end = start + SIGNERS_PER_PAGE;
+  const pageData = detectedSigners.slice(start, end);
+
   let html = `
-    <h4>📋 已辨識簽核人</h4>
-    <div style="max-height:260px;overflow:auto;border:1px solid #e5e7eb;border-radius:8px;">
+    <h4>📋 已辨識簽核人（${total} 人）</h4>
+
+    <div style="max-height:320px;overflow:auto;border:1px solid #e5e7eb;border-radius:8px;">
       <table style="width:100%;font-size:14px;">
         <tr>
-          <th style="text-align:left;padding:6px;">員工編號</th>
-          <th style="text-align:left;padding:6px;">姓名</th>
+          <th style="padding:6px;">員工編號</th>
+          <th style="padding:6px;">姓名</th>
           <th style="width:40px;"></th>
         </tr>
   `;
 
-  detectedSigners.forEach((s,idx)=>{
+  pageData.forEach((s,idx)=>{
+    const realIndex = start + idx; // ⚠️ 關鍵：對應原陣列
     html += `
       <tr>
         <td style="padding:6px;">${s.staffId}</td>
         <td style="padding:6px;">${s.name || "-"}</td>
         <td style="padding:6px;">
-          <button onclick="removeDetected(${idx})" style="border:none;background:none;color:#b91c1c;cursor:pointer;">✖</button>
+          <button onclick="removeDetected(${realIndex})"
+            style="border:none;background:none;color:#b91c1c;cursor:pointer;">
+            ✖
+          </button>
         </td>
       </tr>
     `;
@@ -395,11 +412,27 @@ function renderSignerList(){
   html += `
       </table>
     </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+      <button ${signerPage===1?"disabled":""}
+        onclick="changeSignerPage(-1)">◀ 上一頁</button>
+
+      <span>第 ${signerPage} / ${totalPages || 1} 頁</span>
+
+      <button ${signerPage===totalPages?"disabled":""}
+        onclick="changeSignerPage(1)">下一頁 ▶</button>
+    </div>
   `;
 
   box.innerHTML = html;
 }
 
+  function changeSignerPage(delta){
+  signerPage += delta;
+  if (signerPage < 1) signerPage = 1;
+  renderSignerList();
+}
+  
 /* ===== 手動補登 ===== */
 function addManualSigner(){
   const id = manualStaffId.value.trim();
