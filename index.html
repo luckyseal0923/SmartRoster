@@ -92,6 +92,15 @@ button{
 button.primary{background:var(--primary);color:#fff;}
 button.accent{background:var(--accent);color:#fff;}
 button:disabled{opacity:.5;cursor:not-allowed;}
+  button.secondary{
+  background:#f3f4f6;
+  color:#374151;
+  border:1px solid #d1d5db;
+}
+
+button.secondary:hover{
+  background:#e5e7eb;
+}
 
 /* ===== 任務清單 table ===== */
 table{
@@ -276,8 +285,10 @@ th{color:var(--muted);font-weight:600;}
     <ul id="manualList" style="margin-top:10px;"></ul>
 
     <br>
-    <button class="primary" onclick="confirmCreate()">確認</button>
-  </div>
+<div style="display:flex;justify-content:flex-end;gap:12px;">
+  <button class="secondary" onclick="cancelCreate()">取消</button>
+  <button class="primary" onclick="confirmCreate()">建立任務</button>
+</div>  </div>
 </div>
 
 <script>
@@ -493,6 +504,11 @@ function confirmCreate(){
 /* ===== 複製連結 ===== */
 function copyLink(){
   alert("（Demo）任務連結已複製");
+}
+
+  function cancelCreate(){
+  if (!confirm("確定要取消建立任務？")) return;
+  document.getElementById("modal").style.display = "none";
 }
 </script>
 
