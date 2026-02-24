@@ -325,6 +325,21 @@ th{color:var(--muted);font-weight:600;}
 </div>
 
 <script>
+  /* ===== DOM 元素快取（一定要有） ===== */
+const creator = document.getElementById("creator");
+const staffId = document.getElementById("staffId");
+const unit = document.getElementById("unit");
+const month = document.getElementById("month");
+const password = document.getElementById("password");
+
+const manualStaffId = document.getElementById("manualStaffId");
+const manualName = document.getElementById("manualName");
+
+const fileInput = document.getElementById("fileInput");
+const fileName = document.getElementById("fileName");
+const clearFileBtn = document.getElementById("clearFileBtn");
+
+const createBtn = document.getElementById("createBtn");
 let detectedSigners = [];
 let manualSigners = [];
 const createBtn = document.getElementById("createBtn");
@@ -542,7 +557,6 @@ async function confirmCreate(){
     return;
   }
 
-  const createBtn = document.getElementById("createBtn");
   createBtn.textContent = "建立中…";
   createBtn.disabled = true;
 
