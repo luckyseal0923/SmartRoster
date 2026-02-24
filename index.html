@@ -304,7 +304,7 @@ function runCheck(){
   content.innerHTML = "⏳ 辨識中，請稍候…";
   modal.style.display = "flex";
 
-  fetch("https://your-n8n-domain/webhook/roster-check", {
+  fetch("https://chihwei-n8n.zeabur.app/webhook-test/roster-check", {
     method: "POST",
     body: fd
   })
