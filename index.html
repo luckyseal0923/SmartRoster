@@ -355,7 +355,6 @@ async function runCheck(){
   const modal = document.getElementById("modal");
   const content = document.getElementById("checkContent");
 
-  const fileInput = document.querySelector('input[type="file"]');
   if (!fileInput.files.length) {
     alert("請先上傳班表 Excel");
     return;
@@ -368,38 +367,51 @@ async function runCheck(){
   modal.style.display = "flex";
 
   try {
-    const res = await fetch("https://chihwei-n8n.zeabur.app/webhook/roster-check", {
-      method: "POST",
-      body: fd
-    });
+    const res = await fetch(
+      "https://chihwei-n8n.zeabur.app/webhook/roster-check",
+      { method: "POST", body: fd }
+    );
 
-    const data = await res.json();
+    /* ✅ 先拿原始文字（關鍵） */
+    const text = await res.text();
+    let data;
 
-    if (data.status !== "ok") {
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      console.error("⚠️ 非 JSON 回傳：", text);
+      throw new Error("後端回傳格式錯誤");
+    }
+
+    /* ✅ 再來才判斷內容 */
+    if (!res.ok || data.status !== "ok") {
       content.innerHTML = `
-        <div class="status-bad">❌ ${data.message || "查核失敗"}</div>
+        <div class="status-bad">
+          ❌ ${data.message || "查核失敗"}
+        </div>
       `;
-      createBtn.disabled = true;
       return;
     }
 
     detectedSigners = data.signers || [];
     manualSigners = [];
+    signerPage = 1;
 
     content.innerHTML = `
       <div class="status-ok">✔ 查核通過</div>
-      系統辨識簽核人數：${data.signerCount} 人
+      系統辨識簽核人數：${detectedSigners.length} 人
     `;
 
     renderSignerList();
-    createBtn.disabled = false;
 
   } catch (err) {
+    console.error(err);
     content.innerHTML = `
-      <div class="status-bad">❌ 系統錯誤</div>
-      無法連線至辨識服務
+      <div class="status-bad">
+        ❌ 系統錯誤<br>
+        ${err.message || "無法連線至辨識服務"}
+      </div>
     `;
-    createBtn.disabled = true;
   }
 }
 
