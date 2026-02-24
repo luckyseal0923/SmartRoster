@@ -153,7 +153,20 @@ th{color:var(--muted);font-weight:600;}
 
 .status-ok{color:var(--ok);}
 .status-warn{color:var(--warn);}
-.status-bad{color:var(--bad);}
+.status-bad{color:var(--bad);
+           }
+  .file-btn{
+  padding:10px 14px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:#f9fafb;
+  cursor:pointer;
+  font-size:14px;
+}
+
+.file-btn:hover{
+  background:#eef2f7;
+}
 </style>
 </head>
 
@@ -196,15 +209,32 @@ th{color:var(--muted);font-weight:600;}
     </div>
   </div>
 
-  <div class="upload-box">
-    <strong>📄 上傳班表 Excel</strong>
-    <p style="color:var(--muted)">用於辨識待簽核人數</p>
-    <input type="file">
+<div class="upload-box">
+  <div style="font-size:18px;margin-bottom:8px;">
+    📁 <strong>上傳班表 Excel</strong>
   </div>
+
+  <p style="color:var(--muted);margin-bottom:12px;">
+    用於辨識待簽核人數
+  </p>
+
+  <div id="filePicker" style="display:flex;align-items:center;gap:10px;">
+    <label for="fileInput" class="file-btn">
+      ⬆ 選擇檔案
+    </label>
+    <span id="fileName" style="color:#374151;"></span>
+    <button id="clearFileBtn"
+            onclick="clearFile()"
+            style="display:none;border:none;background:none;color:#b91c1c;cursor:pointer;font-size:18px;">
+      ✖
+    </button>
+  </div>
+
+  <input id="fileInput" type="file" accept=".xlsx,.xls" style="display:none;">
+</div>
 
   <div class="actions">
     <button class="accent" onclick="runCheck()">🔍 查核任務辨識</button>
-    <button id="createBtn" class="primary" disabled>建立簽核任務</button>
   </div>
 </div>
 
@@ -509,6 +539,22 @@ function copyLink(){
   function cancelCreate(){
   if (!confirm("確定要取消建立任務？")) return;
   document.getElementById("modal").style.display = "none";
+}
+const fileInput = document.getElementById("fileInput");
+const fileName = document.getElementById("fileName");
+const clearFileBtn = document.getElementById("clearFileBtn");
+
+fileInput.addEventListener("change", () => {
+  if (fileInput.files.length) {
+    fileName.textContent = fileInput.files[0].name;
+    clearFileBtn.style.display = "inline";
+  }
+});
+
+function clearFile(){
+  fileInput.value = "";
+  fileName.textContent = "";
+  clearFileBtn.style.display = "none";
 }
 </script>
 
