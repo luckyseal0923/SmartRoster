@@ -18,7 +18,7 @@
   --warn:#b45309;
   --bad:#b91c1c;
 }
-
+  
 body{
   font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC",sans-serif;
   background:var(--bg);
@@ -246,7 +246,7 @@ th{color:var(--muted);font-weight:600;}
 <thead>
   <tr>
     <th>任務編碼 / 建立時間</th> <th>建立者</th>           <th>單位</th>
-    <th>簽核月份</th>
+    <th>月份</th>
     <th>完成度</th>
     <th>功能</th>            </tr>
 </thead>
@@ -481,18 +481,20 @@ function addManualSigner(){
     return;
   }
 
+  // 檢查是否重複
   if (
-    detectedSigners.some(s=>s.staffId===id) ||
-    manualSigners.some(s=>s.staffId===id)
+    detectedSigners.some(s => s.staffId === id) ||
+    manualSigners.some(s => s.staffId === id)
   ) {
-    alert("此員工編號已存在");
+    alert("此員工編號已存在於清單中");
     return;
   }
 
-  manualSigners.push({ staffId:id, name });
-  manualStaffId.value="";
-  manualName.value="";
-
+  // 確保欄位名稱為 staffId (對應後端 Code 節點)
+  manualSigners.push({ staffId: id, name: name });
+  
+  manualStaffId.value = "";
+  manualName.value = "";
   renderManualList();
 }
 
@@ -567,6 +569,16 @@ async function confirmCreate(){
     }
 
     alert(`✅ 任務建立完成\n任務編碼：${data.task_id}`);
+document.getElementById("creator").value = "";
+document.getElementById("staffId").value = "";
+document.getElementById("unit").value = "";
+document.getElementById("month").value = "";
+document.getElementById("password").value = "";
+clearFile(); // 清除上傳檔案顯示
+detectedSigners = [];
+manualSigners = [];
+renderManualList();
+validateForm(); // 重新禁用按鈕
 
     // 📍 在這裡加入這一行
 fetchTasks();
@@ -585,7 +597,7 @@ fetchTasks();
     createBtn.disabled = false;
   }
 }
-
+  
 /* ===== 複製連結 ===== */
 function copyLink(){
   alert("（Demo）任務連結已複製");
