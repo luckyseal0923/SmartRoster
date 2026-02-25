@@ -243,15 +243,13 @@ th{color:var(--muted);font-weight:600;}
   <h3>📊 任務清單</h3>
 
   <table>
-    <thead>
-      <tr>
-        <th>任務編碼</th>
-        <th>單位</th>
-        <th>月份</th>
-        <th>完成度</th>
-        <th>連結</th>
-      </tr>
-    </thead>
+<thead>
+  <tr>
+    <th>任務編碼 / 建立時間</th> <th>建立者</th>           <th>單位</th>
+    <th>月份</th>
+    <th>完成度</th>
+    <th>功能</th>            </tr>
+</thead>
 <tbody id="taskTableBody">
       <tr><td colspan="5" style="text-align:center;">載入中...</td></tr>
     </tbody>
@@ -612,54 +610,71 @@ function clearFile(){
 }
 
   // 在頁面載入後自動執行
+// 在頁面載入後自動執行
 window.addEventListener('DOMContentLoaded', fetchTasks);
 
 async function fetchTasks() {
   const tbody = document.getElementById("taskTableBody");
-  
+  if (!tbody) return; // 安全檢查
+
   try {
-    // 🔗 請替換成您在 n8n 建立的 GET Webhook URL
+    // 🔗 您的 n8n Webhook URL
     const res = await fetch("https://chihwei-n8n.zeabur.app/webhook/roster-list");
-    const tasks = await res.json();
+    const tasks = await res.json(); // 這裡定義為 tasks
 
     if (!tasks || tasks.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">目前無任務</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">目前無任務</td></tr>';
       return;
     }
 
     tbody.innerHTML = ""; // 清空載入中文字
 
+    // 📍 這裡修正為 tasks.forEach (原本寫 data.forEach 會報錯)
     tasks.forEach(task => {
-      // 計算進度百分比 (假設後端已算好，或是前端算)
-      // 這裡假設後端回傳包含 progress 欄位
-      const progress = task.progress || 0; 
+      const progress = task.progress || 0;
       
+      // 處理時間格式，讓它更顯目
+      const dateObj = new Date(task.created_at);
+      const dateStr = dateObj.toLocaleDateString('zh-TW');
+      const timeStr = dateObj.toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
+
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td>${task.task_id}</td>
+        <td>
+          <div style="font-weight: 600; color: var(--primary);">${task.task_id}</div>
+          <div style="font-size: 11px; color: #059669; margin-top: 4px; background: #eefef4; display: inline-block; padding: 2px 6px; border-radius: 4px;">
+            📅 ${dateStr} ${timeStr}
+          </div>
+        </td>
+        <td style="font-weight: 500;">${task.creator || '-'}</td>
         <td>${task.unit}</td>
         <td>${task.month}</td>
         <td>
-          <div class="progress">
-            <div class="progress-bar" style="width:${progress}%"></div>
-          </div>
-          ${progress}% (${task.signed_count || 0}/${task.signer_count})
+          <div class="progress"><div class="progress-bar" style="width:${progress}%"></div></div>
+          <span style="font-size: 12px;">${progress}% (${task.signed_count}/${task.signer_count})</span>
         </td>
         <td>
-          <span class="copy" onclick="copyLink('${task.task_id}')" title="複製簽核連結">📋</span>
+          <div style="display: flex; gap: 8px;">
+            <button class="copy" onclick="copyLink('${task.task_id}')" style="padding: 4px 8px; background: none; border: 1px solid var(--border); border-radius: 6px;" title="複製連結">🔗</button>
+            <button class="primary" onclick="prepDownload('${task.task_id}')" style="padding: 4px 8px; font-size: 12px; border-radius: 6px; background: var(--primary); color: white; border: none;">📥 下載</button>
+          </div>
         </td>
       `;
       tbody.appendChild(tr);
     });
   } catch (err) {
     console.error("載入任務清單失敗:", err);
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">無法載入資料</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:red;">無法載入資料</td></tr>';
   }
+}
+
+// 預留的下載按鈕功能
+function prepDownload(taskId) {
+  alert("正在開發中：\n未來將在此輸入帳號密碼，下載任務 [" + taskId + "] 的簽核完整 Excel。");
 }
 
 // 修正後的複製連結功能
 function copyLink(taskId) {
-  // 這裡可以定義簽核頁面的 URL 格式
   const signUrl = `${window.location.origin}/sign.html?id=${taskId}`;
   navigator.clipboard.writeText(signUrl).then(() => {
     alert(`任務 ${taskId} 連結已複製到剪貼簿！`);
