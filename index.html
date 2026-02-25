@@ -568,17 +568,31 @@ if (!res.ok || data.status !== "ok") {
       throw new Error(data.message || "任務建立失敗");
     }
 
-    // 📍 1. 定義簽核連結 (對應您指定的 confirm.html)
-    const confirmUrl = `https://smartroster.zeabur.app/confirm.html?id=${data.task_id}`;
+    // 📍 1. 取得任務編號與格式化過期日期
+    const tid = data.task_id;
+    const confirmUrl = `https://smartroster.zeabur.app/confirm.html?id=${tid}`;
+    
+    // 格式化日期顯示 (例如：2026/03/10)
+    let expireDisplay = "2 週內";
+    if (data.expires_at) {
+        expireDisplay = new Date(data.expires_at).toLocaleDateString('zh-TW', {
+            year: 'numeric', month: 'long', day: 'numeric'
+        });
+    }
 
-    // 📍 2. 自動複製連結到剪貼簿
-    navigator.clipboard.writeText(confirmUrl).then(() => {
-        // 📍 3. 顯示更完整的成功訊息
-        alert(`✅ 任務建立完成！\n\n任務編碼：${data.task_id}\n\n🔗 簽核連結（有效期 2 週）：\n${confirmUrl}\n\n連結已自動複製，請轉發給同仁進行簽核。`);
-    }).catch(err => {
-        // 萬一瀏覽器不支援自動複製，至少讓主管能看到網址
-        alert(`✅ 任務建立完成\n任務連結：\n${confirmUrl}`);
-    });
+    // 📍 2. 準備給主管的轉傳訊息
+    const shareMessage = `【SmartRoster 班表確認通知】\n\n同仁您好，請點擊下方連結確認本月班表並完成簽核：\n🔗 ${confirmUrl}\n\n⚠️ 請於 ${expireDisplay} 前完成確認，逾期連結將失效。`;
+
+    // 📍 3. 嘗試自動複製並提示
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(shareMessage).then(() => {
+            alert(`✅ 任務建立完成！\n\n轉傳訊息已自動複製到剪貼簿，您可以直接貼上傳送給同仁。\n\n任務編碼：${tid}`);
+        }).catch(err => {
+            alert(`✅ 任務建立完成！\n\n請手動複製下方訊息傳送給同仁：\n\n${shareMessage}`);
+        });
+    } else {
+        alert(`✅ 任務建立完成！\n\n請複製訊息：\n${shareMessage}`);
+    }
     
 document.getElementById("creator").value = "";
 document.getElementById("staffId").value = "";
