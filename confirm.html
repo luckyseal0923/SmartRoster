@@ -196,8 +196,8 @@ async function lookup() {
 
   try {
     // 📍 呼叫 n8n 查詢該任務中該員編的班表
-    const res = await fetch(`https://chihwei-n8n.zeabur.app/webhook/roster-get-individual?taskId=${taskId}&staffId=${staffIdInput}`);
-    
+// 📍 請注意路徑已改為 Staff-check-reoster
+const res = await fetch(`https://chihwei-n8n.zeabur.app/webhook/Staff-check-reoster?taskId=${taskId}&staffId=${staffIdInput}`);    
     if (!res.ok) throw new Error("查無此員編或任務已過期");
 
     const record = await res.json(); 
