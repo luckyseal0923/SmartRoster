@@ -197,36 +197,50 @@ async function lookup() {
   try {
     // 📍 呼叫 n8n 查詢該任務中該員編的班表
 // 📍 請注意路徑已改為 Staff-check-reoster
-const res = await fetch(`https://chihwei-n8n.zeabur.app/webhook/Staff-check-reoster?taskId=${taskId}&staffId=${staffIdInput}`);    
+const res = await fetch(`https://chihwei-n8n.zeabur.app/webhook/Staff-check-reoster?taskId=${taskId}&staffId=${staffIdInput}`);
     if (!res.ok) throw new Error("查無此員編或任務已過期");
 
-    const record = await res.json(); 
+    let record = await res.json(); 
+
+    // 📍 關鍵修正：如果 n8n 傳回的是 [ { ... } ] 陣列格式，自動取第一筆
+    if (Array.isArray(record)) {
+        record = record[0];
+    }
+
+    // 📍 關鍵修正：將 scheduleString 字串解析回 Array
+    let scheduleArray = [];
+    try {
+        scheduleArray = typeof record.scheduleString === 'string' 
+            ? JSON.parse(record.scheduleString) 
+            : record.schedule;
+    } catch (e) {
+        console.error("解析班表失敗", e);
+    }
 
     currentStaffId = staffIdInput;
-    document.getElementById("name").innerText = record.name;
+    
+    // 現在 record.name 就不會是 undefined 了
+    document.getElementById("name").innerText = record.name || "未定義";
     document.getElementById("staff").innerText = staffIdInput;
 
     const tbody = document.getElementById("scheduleTable");
     tbody.innerHTML = "";
     
-    // 確保後端傳回的 schedule 存在
-    if(record.schedule && record.schedule.length > 0) {
-      record.schedule.forEach(r => {
-        tbody.innerHTML += `
-          <tr>
-            <td>${r.date}</td>
-            <td>${r.shift}</td>
-            <td>${r.note || "-"}</td>
-          </tr>`;
-      });
+    // 渲染表格
+    if (Array.isArray(scheduleArray) && scheduleArray.length > 0) {
+        scheduleArray.forEach(r => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${r.date}</td>
+                    <td>${r.shift}</td>
+                    <td>${r.note || "-"}</td>
+                </tr>`;
+        });
     } else {
-      tbody.innerHTML = "<tr><td colspan='3'>尚無班表資料</td></tr>";
+        tbody.innerHTML = "<tr><td colspan='3'>尚無班表資料</td></tr>";
     }
 
     document.getElementById("resultCard").classList.remove("hidden");
-  } catch (err) {
-    alert(err.message);
-    document.getElementById("resultCard").classList.add("hidden");
   } finally {
     btn.innerText = "查詢班表";
     btn.disabled = false;
