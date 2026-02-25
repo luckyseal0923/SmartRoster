@@ -564,11 +564,22 @@ async function confirmCreate(){
       throw new Error("後端回傳格式錯誤");
     }
 
-    if (!res.ok || data.status !== "ok") {
+if (!res.ok || data.status !== "ok") {
       throw new Error(data.message || "任務建立失敗");
     }
 
-    alert(`✅ 任務建立完成\n任務編碼：${data.task_id}`);
+    // 📍 1. 定義簽核連結 (對應您指定的 confirm.html)
+    const confirmUrl = `https://smartroster.zeabur.app/confirm.html?id=${data.task_id}`;
+
+    // 📍 2. 自動複製連結到剪貼簿
+    navigator.clipboard.writeText(confirmUrl).then(() => {
+        // 📍 3. 顯示更完整的成功訊息
+        alert(`✅ 任務建立完成！\n\n任務編碼：${data.task_id}\n\n🔗 簽核連結（有效期 2 週）：\n${confirmUrl}\n\n連結已自動複製，請轉發給同仁進行簽核。`);
+    }).catch(err => {
+        // 萬一瀏覽器不支援自動複製，至少讓主管能看到網址
+        alert(`✅ 任務建立完成\n任務連結：\n${confirmUrl}`);
+    });
+    
 document.getElementById("creator").value = "";
 document.getElementById("staffId").value = "";
 document.getElementById("unit").value = "";
