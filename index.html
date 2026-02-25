@@ -563,43 +563,26 @@ async function confirmCreate(){
       console.error("⚠️ 非 JSON 回傳：", text);
       throw new Error("後端回傳格式錯誤");
     }
-
-    if (!res.ok || data.status !== "ok") {
+if (!res.ok || data.status !== "ok") {
       throw new Error(data.message || "任務建立失敗");
     }
 
-    // 📍 1. 取得任務編號與處理過期日期
+    // 📍 1. 準備通知內容
     const tid = data.task_id;
     const confirmUrl = `https://smartroster.zeabur.app/confirm.html?id=${tid}`;
-    
-    // 處理日期顯示格式
-    let expireDisplay = "2 週內"; 
+    let expireDisplay = "14 天內"; 
     if (data.expires_at) {
-        try {
-            const d = new Date(data.expires_at);
-            expireDisplay = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
-        } catch(e) {
-            expireDisplay = "2 週內";
-        }
+        const d = new Date(data.expires_at);
+        expireDisplay = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
     }
 
-    // 📍 2. 準備給主管的轉傳訊息
-    const shareMessage = `【SmartRoster 班表確認通知】\n\n同仁您好，請點擊下方連結確認本月班表並完成簽核：\n🔗 ${confirmUrl}\n\n⚠️ 請於 ${expireDisplay} 前完成確認，逾期連結將失效。`;
+    const shareMessage = `同仁您好，請點擊下方連結確認本月班表並完成簽核：\n🔗 ${confirmUrl}\n\n⚠️ 請於 ${expireDisplay} 前完成確認，逾期連結將失效。`;
 
-    // 📍 3. 修改彈窗邏輯：顯示完整訊息並嘗試複製
-    const showFinalAlert = () => {
-        alert(`✅ 任務建立完成！\n\n【給同仁的通知訊息】：\n----------------------------\n${shareMessage}\n----------------------------\n\n訊息已嘗試複製到剪貼簿，請轉發給同仁。`);
-    };
+    // 📍 2. 將內容塞入新彈窗並顯示
+    document.getElementById("shareText").innerText = shareMessage;
+    document.getElementById("successModal").style.display = "flex";
 
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(shareMessage)
-            .then(() => showFinalAlert())
-            .catch(() => showFinalAlert()); // 就算自動複製被瀏覽器擋掉，也要跳彈窗
-    } else {
-        showFinalAlert();
-    }
-
-    // 📍 4. 清除表單資料
+    // 📍 3. 清除原本的表單與關閉建立視窗
     document.getElementById("creator").value = "";
     document.getElementById("staffId").value = "";
     document.getElementById("unit").value = "";
@@ -610,8 +593,6 @@ async function confirmCreate(){
     manualSigners = [];
     renderManualList();
     validateForm(); 
-
-    // 📍 5. 更新下方清單並關閉 Modal
     fetchTasks();
     document.getElementById("modal").style.display = "none";
 
@@ -718,8 +699,39 @@ function copyLink(taskId) {
     alert(`任務 ${taskId} 連結已複製到剪貼簿！`);
   });
 }
-  
+
+// 複製訊息並關閉
+function copyShareText() {
+  const text = "【SmartRoster 班表確認通知】\n\n" + document.getElementById("shareText").innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    alert("訊息已複製到剪貼簿，請直接貼上傳送給同仁！");
+    closeSuccessModal();
+    // 📍 建議加上這行，確保清單是最新的
+    fetchTasks();
+  });
+}
+
+// 關閉通知彈窗
+function closeSuccessModal() {
+  document.getElementById("successModal").style.display = "none";
+}
 </script>
 
+<div class="modal" id="successModal" style="display: none; align-items: center; justify-content: center;">
+  <div class="modal-box" style="width: 500px; text-align: center;">
+    <div style="font-size: 50px; margin-bottom: 10px;">✅</div>
+    <h3 style="color: var(--accent); margin-bottom: 20px;">任務建立完成！</h3>
+    
+    <div style="background: #f9fafb; border: 1px solid var(--border); border-radius: 12px; padding: 20px; text-align: left; margin-bottom: 24px;">
+      <p style="margin: 0 0 10px 0; font-weight: 600; font-size: 15px;">【SmartRoster 班表確認通知】</p>
+      <p id="shareText" style="margin: 0; font-size: 14px; line-height: 1.6; white-space: pre-wrap; color: var(--primary);"></p>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <button class="accent" onclick="copyShareText()" style="width: 100%;">📋 複製通知訊息並關閉</button>
+      <button class="secondary" onclick="closeSuccessModal()" style="width: 100%;">僅關閉視窗</button>
+    </div>
+  </div>
+</div> 
 </body>
 </html>
