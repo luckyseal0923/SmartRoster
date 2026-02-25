@@ -197,7 +197,7 @@ async function lookup() {
   try {
     // 📍 呼叫 n8n 查詢該任務中該員編的班表
 // 📍 請注意路徑已改為 Staff-check-roster
-const res = await fetch(`https://chihwei-n8n.zeabur.app/webhook/Staff-check-reoster?taskId=${taskId}&staffId=${staffIdInput}`);
+const res = await fetch(`https://chihwei-n8n.zeabur.app/webhook/Staff-check-roster`);
     if (!res.ok) throw new Error("查無此員編或任務已過期");
 
     let record = await res.json(); 
@@ -217,28 +217,26 @@ const res = await fetch(`https://chihwei-n8n.zeabur.app/webhook/Staff-check-reos
         console.error("解析班表失敗", e);
     }
 
-    currentStaffId = staffIdInput;
-    
-    // 現在 record.name 就不會是 undefined 了
-    document.getElementById("name").innerText = record.name || "未定義";
-    document.getElementById("staff").innerText = staffIdInput;
+const record = await res.json();
+currentStaffId = staffIdInput;
+document.getElementById("name").innerText = record.name || "未定義";
+document.getElementById("staff").innerText = record.staff_id || staffIdInput;
 
-    const tbody = document.getElementById("scheduleTable");
-    tbody.innerHTML = "";
-    
-    // 渲染表格
-    if (Array.isArray(scheduleArray) && scheduleArray.length > 0) {
-        scheduleArray.forEach(r => {
-            tbody.innerHTML += `
-                <tr>
-                    <td>${r.date}</td>
-                    <td>${r.shift}</td>
-                    <td>${r.note || "-"}</td>
-                </tr>`;
-        });
-    } else {
-        tbody.innerHTML = "<tr><td colspan='3'>尚無班表資料</td></tr>";
-    }
+const tbody = document.getElementById("scheduleTable");
+tbody.innerHTML = "";
+
+if (Array.isArray(record.schedule) && record.schedule.length > 0) {
+  record.schedule.forEach(entry => {
+    tbody.innerHTML += `
+      <tr>
+        <td>${entry.date}</td>
+        <td>${entry.shift}</td>
+        <td>${entry.note || "-"}</td>
+      </tr>`;
+  });
+} else {
+  tbody.innerHTML = "<tr><td colspan='3'>尚無班表資料</td></tr>";
+}
 
     document.getElementById("resultCard").classList.remove("hidden");
   } finally {
