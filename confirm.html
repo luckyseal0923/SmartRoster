@@ -126,6 +126,9 @@
   <!-- 查詢 -->
   <div class="card">
     <h2>班表確認</h2>
+<div id="taskDisplay" style="text-align: center; color: var(--muted); font-size: 13px; margin-bottom: 12px;">
+  任務載入中...
+</div>
     <div class="search-row">
       <input id="staffId" placeholder="請輸入員編" />
       <button onclick="lookup()">查詢班表</button>
@@ -165,51 +168,77 @@
 </div>
 
 <script>
-  /* 模擬資料（之後接 n8n） */
-  const fakeData = {
-    "A123456": {
-      name: "王○明",
-      schedule: [
-        { date: "2/1", shift: "夜班", note: "" },
-        { date: "2/3", shift: "早班", note: "" },
-        { date: "2/5", shift: "OFF", note: "" }
-      ]
-    }
-  };
+// 📍 1. 抓取 URL 中的 task_id (例如：confirm.html?id=task-202603-XXX)
+const urlParams = new URLSearchParams(window.location.search);
+const taskId = urlParams.get('id');
 
-  let currentStaffId = "";
+let currentStaffId = "";
 
-  function lookup() {
-    const staffId = document.getElementById("staffId").value.trim();
-    const record = fakeData[staffId];
+// 📍 2. 頁面載入檢查
+window.onload = function() {
+  const display = document.getElementById("taskDisplay");
+  if (taskId) {
+    display.innerText = `任務編號：${taskId}`;
+  } else {
+    display.innerHTML = "<b style='color:red;'>錯誤：缺少任務 ID，請洽單位主管。</b>";
+    document.querySelector(".search-row button").disabled = true;
+  }
+};
 
-    if (!record) {
-      alert("查無此員編");
-      return;
-    }
+// 📍 3. 查詢班表函數
+async function lookup() {
+  const staffIdInput = document.getElementById("staffId").value.trim();
+  if (!staffIdInput) return alert("請輸入員編");
 
-    currentStaffId = staffId;
+  const btn = document.querySelector(".search-row button");
+  btn.innerText = "查詢中...";
+  btn.disabled = true;
 
+  try {
+    // 📍 呼叫 n8n 查詢該任務中該員編的班表
+    const res = await fetch(`https://chihwei-n8n.zeabur.app/webhook/roster-get-individual?taskId=${taskId}&staffId=${staffIdInput}`);
+    
+    if (!res.ok) throw new Error("查無此員編或任務已過期");
+
+    const record = await res.json(); 
+
+    currentStaffId = staffIdInput;
     document.getElementById("name").innerText = record.name;
-    document.getElementById("staff").innerText = staffId;
+    document.getElementById("staff").innerText = staffIdInput;
 
     const tbody = document.getElementById("scheduleTable");
     tbody.innerHTML = "";
-    record.schedule.forEach(r => {
-      tbody.innerHTML += `
-        <tr>
-          <td>${r.date}</td>
-          <td>${r.shift}</td>
-          <td>${r.note || "-"}</td>
-        </tr>`;
-    });
+    
+    // 確保後端傳回的 schedule 存在
+    if(record.schedule && record.schedule.length > 0) {
+      record.schedule.forEach(r => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${r.date}</td>
+            <td>${r.shift}</td>
+            <td>${r.note || "-"}</td>
+          </tr>`;
+      });
+    } else {
+      tbody.innerHTML = "<tr><td colspan='3'>尚無班表資料</td></tr>";
+    }
 
     document.getElementById("resultCard").classList.remove("hidden");
+  } catch (err) {
+    alert(err.message);
+    document.getElementById("resultCard").classList.add("hidden");
+  } finally {
+    btn.innerText = "查詢班表";
+    btn.disabled = false;
   }
+}
 
-  function goSign() {
-    location.href = `sign.html?staffId=${encodeURIComponent(currentStaffId)}`;
-  }
+// 📍 4. 前往簽核頁面
+function goSign() {
+  if (!currentStaffId || !taskId) return alert("資料不完整");
+  // 帶著 ID 前往簽名頁
+  location.href = `sign.html?id=${taskId}&staffId=${encodeURIComponent(currentStaffId)}`;
+}
 </script>
 
 </body>
