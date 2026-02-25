@@ -197,48 +197,36 @@ async function lookup() {
   try {
     // 📍 呼叫 n8n 查詢該任務中該員編的班表
 // 📍 請注意路徑已改為 Staff-check-roster
-const res = await fetch(`https://chihwei-n8n.zeabur.app/webhook/Staff-check-roster`);
+const res = await fetch(`https://chihwei-n8n.zeabur.app/webhook/Staff-check-roster?taskId=${taskId}&staffId=${encodeURIComponent(staffIdInput)}`);
     if (!res.ok) throw new Error("查無此員編或任務已過期");
 
     let record = await res.json(); 
 
-    // 📍 關鍵修正：如果 n8n 傳回的是 [ { ... } ] 陣列格式，自動取第一筆
-    if (Array.isArray(record)) {
-        record = record[0];
+ const record = await res.json();
+    currentStaffId = staffIdInput;
+    document.getElementById("name").innerText = record.name || "未定義";
+    document.getElementById("staff").innerText = record.staff_id || staffIdInput;
+
+    const tbody = document.getElementById("scheduleTable");
+    tbody.innerHTML = "";
+
+    if (Array.isArray(record.schedule) && record.schedule.length > 0) {
+      record.schedule.forEach(entry => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${entry.date}</td>
+            <td>${entry.shift}</td>
+            <td>${entry.note || "-"} </td>
+          </tr>`;
+      });
+    } else {
+      tbody.innerHTML = "<tr><td colspan='3'>尚無班表資料</td></tr>";
     }
-
-    // 📍 關鍵修正：將 scheduleString 字串解析回 Array
-    let scheduleArray = [];
-    try {
-        scheduleArray = typeof record.scheduleString === 'string' 
-            ? JSON.parse(record.scheduleString) 
-            : record.schedule;
-    } catch (e) {
-        console.error("解析班表失敗", e);
-    }
-
-const record = await res.json();
-currentStaffId = staffIdInput;
-document.getElementById("name").innerText = record.name || "未定義";
-document.getElementById("staff").innerText = record.staff_id || staffIdInput;
-
-const tbody = document.getElementById("scheduleTable");
-tbody.innerHTML = "";
-
-if (Array.isArray(record.schedule) && record.schedule.length > 0) {
-  record.schedule.forEach(entry => {
-    tbody.innerHTML += `
-      <tr>
-        <td>${entry.date}</td>
-        <td>${entry.shift}</td>
-        <td>${entry.note || "-"}</td>
-      </tr>`;
-  });
-} else {
-  tbody.innerHTML = "<tr><td colspan='3'>尚無班表資料</td></tr>";
-}
 
     document.getElementById("resultCard").classList.remove("hidden");
+  } catch (err) {
+    alert(err.message || "查詢失敗，請稍後再試");
+    document.getElementById("resultCard").classList.add("hidden");
   } finally {
     btn.innerText = "查詢班表";
     btn.disabled = false;
