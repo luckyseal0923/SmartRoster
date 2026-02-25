@@ -625,9 +625,6 @@ function copyLink(){
   if (!confirm("確定要取消建立任務？")) return;
   document.getElementById("modal").style.display = "none";
 }
-const fileInput = document.getElementById("fileInput");
-const fileName = document.getElementById("fileName");
-const clearFileBtn = document.getElementById("clearFileBtn");
 
 fileInput.addEventListener("change", () => {
   if (fileInput.files.length) {
