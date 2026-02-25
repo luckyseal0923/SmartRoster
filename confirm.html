@@ -195,15 +195,12 @@ async function lookup() {
   btn.disabled = true;
 
   try {
-    // 📍 呼叫 n8n 查詢該任務中該員編的班表
-// 📍 請注意路徑已改為 Staff-check-roster
-const res = await fetch(`https://chihwei-n8n.zeabur.app/webhook/Staff-check-roster?taskId=${taskId}&staffId=${encodeURIComponent(staffIdInput)}`);
+    const res = await fetch(`https://chihwei-n8n.zeabur.app/webhook/Staff-check-roster?taskId=${taskId}&staffId=${encodeURIComponent(staffIdInput)}`);
     if (!res.ok) throw new Error("查無此員編或任務已過期");
 
-    let record = await res.json(); 
-
- const record = await res.json();
+    const record = await res.json();
     currentStaffId = staffIdInput;
+
     document.getElementById("name").innerText = record.name || "未定義";
     document.getElementById("staff").innerText = record.staff_id || staffIdInput;
 
@@ -216,7 +213,7 @@ const res = await fetch(`https://chihwei-n8n.zeabur.app/webhook/Staff-check-rost
           <tr>
             <td>${entry.date}</td>
             <td>${entry.shift}</td>
-            <td>${entry.note || "-"} </td>
+            <td>${entry.note || "-"}</td>
           </tr>`;
       });
     } else {
