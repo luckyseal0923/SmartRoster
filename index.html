@@ -730,12 +730,30 @@ function renderTasks(filterKeyword = "") {
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>
-        <div style="font-weight: 600; color: var(--primary);">${task.task_id}</div>
-        <div style="font-size: 11px; color: #059669; margin-top: 4px; background: #eefef4; display: inline-block; padding: 2px 6px; border-radius: 4px;">
-          📅 ${dateStr} ${timeStr}
-        </div>
-      </td>
+<td>
+  <!-- 時間：主要資訊（上方、顯著） -->
+  <div style="
+    font-size: 12px;
+    font-weight: 600;
+    color: #065f46;
+    background: #ecfdf5;
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 6px;
+    margin-bottom: 6px;
+  ">
+    📅 ${dateStr} ${timeStr}
+  </div>
+
+  <!-- 任務編碼：次要資訊（下方、低顯著） -->
+  <div style="
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 2px;
+  ">
+    任務編碼：${task.task_id}
+  </div>
+</td>
       <td style="font-weight: 500;">${task.creator || '-'}</td>
       <td>${task.unit}</td>
       <td>${task.month}</td>
