@@ -240,8 +240,29 @@ th{color:var(--muted);font-weight:600;}
 
 <!-- ===== 任務清單（舊功能完整保留） ===== -->
 <div class="card">
-  <h3>📊 任務清單</h3>
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <h3>📊 任務清單</h3>
+    <div style="display: flex; gap: 8px;">
+      <input id="taskSearch" placeholder="搜尋建立者、單位、月份..." style="width: 250px; padding: 6px 12px; border-radius: 8px;">
+    </div>
+  </div>
 
+  <table>
+    <thead>
+      <tr id="taskTableHeader">
+        <th style="cursor:pointer;" onclick="setSort('created_at')">任務編碼 / 時間 ↕</th>
+        <th style="cursor:pointer;" onclick="setSort('creator')">建立者 ↕</th>
+        <th style="cursor:pointer;" onclick="setSort('unit')">單位 ↕</th>
+        <th style="cursor:pointer;" onclick="setSort('month')">月份 ↕</th>
+        <th style="cursor:pointer;" onclick="setSort('progress')">完成度 ↕</th>
+        <th>功能</th>
+      </tr>
+    </thead>
+    <tbody id="taskTableBody">
+      <tr><td colspan="6" style="text-align:center;">載入中...</td></tr>
+    </tbody>
+  </table>
+</div>
   <table>
 <thead>
   <tr>
@@ -309,6 +330,8 @@ const clearFileBtn = document.getElementById("clearFileBtn");
 const createBtn = document.getElementById("createBtn");
 let detectedSigners = [];
 let manualSigners = [];
+let allTasks = [];      // 儲存從 API 抓回來的原始資料
+let currentSort = { key: 'created_at', asc: false }; // 預設：時間降冪 (最新在前)
   
 /* ===== 分頁狀態 ===== */
 let signerPage = 1;
@@ -628,23 +651,122 @@ function clearFile(){
   clearFileBtn.style.display = "none";
 }
 
-  // 在頁面載入後自動執行
-// 在頁面載入後自動執行
-window.addEventListener('DOMContentLoaded', fetchTasks);
+/* ===== 任務清單增強功能 (搜尋與排序) ===== */
 
+// 1. 初始化監聽：當 DOM 載入後執行
+window.addEventListener('DOMContentLoaded', () => {
+    fetchTasks();
+    // 綁定搜尋框事件 (假設您已經在 HTML 加入 id="taskSearch" 的 input)
+    const searchInput = document.getElementById("taskSearch");
+    if(searchInput) {
+        searchInput.addEventListener("input", (e) => renderTasks(e.target.value));
+    }
+});
+
+// 2. 核心：從後端抓取資料
 async function fetchTasks() {
   const tbody = document.getElementById("taskTableBody");
-  if (!tbody) return; // 安全檢查
+  if (!tbody) return;
 
   try {
-    // 🔗 您的 n8n Webhook URL
     const res = await fetch("https://chihwei-n8n.zeabur.app/webhook/roster-list");
-    const tasks = await res.json(); // 這裡定義為 tasks
+    allTasks = await res.json();
 
-    if (!tasks || tasks.length === 0) {
+    if (!allTasks || allTasks.length === 0) {
       tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">目前無任務</td></tr>';
       return;
     }
+
+    renderTasks(); // 抓完資料立即進行第一次渲染 (預設排序已設為時間降冪)
+  } catch (err) {
+    console.error("載入任務清單失敗:", err);
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:red;">無法載入資料</td></tr>';
+  }
+}
+
+// 3. 設置排序欄位並重新渲染
+function setSort(key) {
+  if (currentSort.key === key) {
+    currentSort.asc = !currentSort.asc; // 同欄位再次點擊則反序
+  } else {
+    currentSort.key = key;
+    currentSort.asc = true;
+  }
+  renderTasks(document.getElementById("taskSearch")?.value || "");
+}
+
+// 4. 核心：過濾、排序與顯示渲染
+function renderTasks(filterKeyword = "") {
+  const tbody = document.getElementById("taskTableBody");
+  const keyword = filterKeyword.toLowerCase();
+
+  // A. 過濾邏輯
+  let filtered = allTasks.filter(task => {
+    return (
+      (task.task_id && String(task.task_id).toLowerCase().includes(keyword)) ||
+      (task.creator && String(task.creator).toLowerCase().includes(keyword)) ||
+      (task.unit && String(task.unit).toLowerCase().includes(keyword)) ||
+      (task.month && String(task.month).toLowerCase().includes(keyword))
+    );
+  });
+
+  // B. 排序邏輯
+  filtered.sort((a, b) => {
+    let valA = a[currentSort.key];
+    let valB = b[currentSort.key];
+
+    // 處理空值避免報錯
+    if (valA === undefined || valA === null) valA = "";
+    if (valB === undefined || valB === null) valB = "";
+
+    // 針對進度或計數等數字進行排序
+    if (typeof valA === 'number' && typeof valB === 'number') {
+      return currentSort.asc ? valA - valB : valB - valA;
+    }
+    
+    // 針對日期或字串進行排序
+    return currentSort.asc 
+      ? String(valA).localeCompare(String(valB)) 
+      : String(valB).localeCompare(String(valA));
+  });
+
+  // C. 繪製 HTML
+  tbody.innerHTML = "";
+  filtered.forEach(task => {
+    const progress = task.progress || 0;
+    const dateObj = new Date(task.created_at);
+    const dateStr = dateObj.toLocaleDateString('zh-TW');
+    const timeStr = dateObj.toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>
+        <div style="font-weight: 600; color: var(--primary);">${task.task_id}</div>
+        <div style="font-size: 11px; color: #059669; margin-top: 4px; background: #eefef4; display: inline-block; padding: 2px 6px; border-radius: 4px;">
+          📅 ${dateStr} ${timeStr}
+        </div>
+      </td>
+      <td style="font-weight: 500;">${task.creator || '-'}</td>
+      <td>${task.unit}</td>
+      <td>${task.month}</td>
+      <td>
+        <div class="progress"><div class="progress-bar" style="width:${progress}%"></div></div>
+        <span style="font-size: 12px;">${progress}% (${task.signed_count}/${task.signer_count})</span>
+      </td>
+      <td>
+        <div style="display: flex; gap: 8px;">
+          <button class="copy" onclick="copyLink('${task.task_id}')" style="padding: 4px 8px; background: none; border: 1px solid var(--border); border-radius: 6px;" title="複製連結">🔗</button>
+          <button class="primary" onclick="prepDownload('${task.task_id}')" style="padding: 4px 8px; font-size: 12px; border-radius: 6px; background: var(--primary); color: white; border: none;">📥 下載</button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">找不到符合條件的任務</td></tr>';
+  }
+}
 
     tbody.innerHTML = ""; // 清空載入中文字
 
