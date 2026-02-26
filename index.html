@@ -263,19 +263,6 @@ th{color:var(--muted);font-weight:600;}
     </tbody>
   </table>
 </div>
-  <table>
-<thead>
-  <tr>
-    <th>任務編碼 / 建立時間</th> <th>建立者</th>           <th>單位</th>
-    <th>月份</th>
-    <th>完成度</th>
-    <th>功能</th>            </tr>
-</thead>
-<tbody id="taskTableBody">
-      <tr><td colspan="5" style="text-align:center;">載入中...</td></tr>
-    </tbody>
-  </table>
-</div>
 
 </div>
 
@@ -629,8 +616,11 @@ if (!res.ok || data.status !== "ok") {
 }
   
 /* ===== 複製連結 ===== */
-function copyLink(){
-  alert("（Demo）任務連結已複製");
+function copyLink(taskId) {
+  const signUrl = `${window.location.origin}/sign.html?id=${taskId}`;
+  navigator.clipboard.writeText(signUrl).then(() => {
+    alert(`任務 ${taskId} 連結已複製到剪貼簿！`);
+  });
 }
 
   function cancelCreate(){
@@ -768,46 +758,7 @@ function renderTasks(filterKeyword = "") {
   }
 }
 
-    tbody.innerHTML = ""; // 清空載入中文字
 
-    // 📍 這裡修正為 tasks.forEach (原本寫 data.forEach 會報錯)
-    tasks.forEach(task => {
-      const progress = task.progress || 0;
-      
-      // 處理時間格式，讓它更顯目
-      const dateObj = new Date(task.created_at);
-      const dateStr = dateObj.toLocaleDateString('zh-TW');
-      const timeStr = dateObj.toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
-
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>
-          <div style="font-weight: 600; color: var(--primary);">${task.task_id}</div>
-          <div style="font-size: 11px; color: #059669; margin-top: 4px; background: #eefef4; display: inline-block; padding: 2px 6px; border-radius: 4px;">
-            📅 ${dateStr} ${timeStr}
-          </div>
-        </td>
-        <td style="font-weight: 500;">${task.creator || '-'}</td>
-        <td>${task.unit}</td>
-        <td>${task.month}</td>
-        <td>
-          <div class="progress"><div class="progress-bar" style="width:${progress}%"></div></div>
-          <span style="font-size: 12px;">${progress}% (${task.signed_count}/${task.signer_count})</span>
-        </td>
-        <td>
-          <div style="display: flex; gap: 8px;">
-            <button class="copy" onclick="copyLink('${task.task_id}')" style="padding: 4px 8px; background: none; border: 1px solid var(--border); border-radius: 6px;" title="複製連結">🔗</button>
-            <button class="primary" onclick="prepDownload('${task.task_id}')" style="padding: 4px 8px; font-size: 12px; border-radius: 6px; background: var(--primary); color: white; border: none;">📥 下載</button>
-          </div>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-  } catch (err) {
-    console.error("載入任務清單失敗:", err);
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:red;">無法載入資料</td></tr>';
-  }
-}
 
 // 預留的下載按鈕功能
 function prepDownload(taskId) {
