@@ -182,10 +182,10 @@
       const res = await fetch("https://chihwei-n8n.zeabur.app/webhook/sign-submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          taskId,
-          staffId,
-          signature: signatureData
+body: JSON.stringify({
+  taskId: taskId,        // 任務編號
+  staffId: staffId,      // 員編
+  signature: signatureData // Base64 簽名資料
         })
       });
 
