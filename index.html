@@ -764,8 +764,8 @@ function renderTasks(filterKeyword = "") {
       <td>
         <div style="display: flex; gap: 8px;">
           <button class="copy" onclick="copyLink('${task.task_id}')" style="padding: 4px 8px; background: none; border: 1px solid var(--border); border-radius: 6px;" title="複製連結">🔗</button>
-          <button class="primary" onclick="handleDownloadAuth('${task.task_id}')" style="padding: 4px 8px; font-size: 12px; border-radius: 6px; background: var(--primary); color: white; border: none;">📥 下載</button>
-        </div>
+          <button class="primary" onclick="handleDownloadAuth('${task.task_id}')" ...>📥 下載</button>       
+</div>
       </td>
     `;
     tbody.appendChild(tr);
@@ -818,6 +818,42 @@ function copyShareText() {
 function closeSuccessModal() {
   document.getElementById("successModal").style.display = "none";
 }
+  let targetTaskId = ""; // 全域變數，紀錄目前要下載哪一個任務
+
+// 1. 點擊「下載」按鈕時觸發
+function handleDownloadAuth(taskId) {
+    targetTaskId = taskId;
+    // 清空上次輸入的內容
+    document.getElementById("auth_user").value = "";
+    document.getElementById("auth_pwd").value = "";
+    // 顯示畫面中間的跳窗
+    document.getElementById("authModal").style.display = "flex";
+}
+
+// 2. 點擊「取消」時觸發
+function closeAuthModal() {
+    document.getElementById("authModal").style.display = "none";
+}
+
+// 3. 綁定「送出驗證」按鈕行為
+document.getElementById("confirmAuthBtn").addEventListener("click", function() {
+    const user = document.getElementById("auth_user").value.trim();
+    const pwd = document.getElementById("auth_pwd").value.trim();
+
+    if (!user || !pwd) {
+        alert("員編與密碼皆為必填！");
+        return;
+    }
+
+    // 組合報表 Webhook URL 並帶入驗證參數
+    const reportUrl = `https://chihwei-n8n.zeabur.app/webhook/roster-report?task_id=${targetTaskId}&auth_user=${user}&auth_pwd=${pwd}`;
+    
+    // 開啟報表頁面
+    window.open(reportUrl, '_blank');
+    
+    // 關閉跳窗
+    closeAuthModal();
+});
 </script>
 
 <div class="modal" id="successModal" style="display: none; align-items: center; justify-content: center;">
@@ -829,12 +865,33 @@ function closeSuccessModal() {
       <p style="margin: 0 0 10px 0; font-weight: 600; font-size: 15px;">【SmartRoster 班表確認通知】</p>
       <p id="shareText" style="margin: 0; font-size: 14px; line-height: 1.6; white-space: pre-wrap; color: var(--primary);"></p>
     </div>
-
+  </div>
+</div>
     <div style="display: flex; flex-direction: column; gap: 12px;">
       <button class="accent" onclick="copyShareText()" style="width: 100%;">📋 複製通知訊息並關閉</button>
       <button class="secondary" onclick="closeSuccessModal()" style="width: 100%;">僅關閉視窗</button>
+      <div class="modal" id="authModal">
+  <div class="modal-box" style="width: 350px;">
+    <h3 style="text-align: center;">🔐 報表檢視驗證</h3>
+    <p style="font-size: 13px; color: var(--muted); text-align: center; margin-bottom: 20px;">請輸入建立者員編與任務密碼</p>
+    
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div>
+        <label>管理員員編 (帳號)</label>
+        <input id="auth_user" placeholder="請輸入員編">
+      </div>
+      <div>
+        <label>任務密碼</label>
+        <input id="auth_pwd" type="password" placeholder="請輸入 6 位數密碼">
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 12px; margin-top: 24px;">
+      <button class="secondary" onclick="closeAuthModal()" style="flex: 1;">取消</button>
+      <button class="accent" id="confirmAuthBtn" style="flex: 1;">送出驗證</button>
     </div>
   </div>
 </div> 
+  
 </body>
 </html>
