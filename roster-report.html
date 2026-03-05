@@ -1,58 +1,218 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <title>同仁簽核匯總報告</title>
-    <style>
-        body { font-family: "Noto Sans TC", sans-serif; padding: 40px; color: #333; }
-        h1 { text-align: center; color: #1a56db; }
-        .report-info { text-align: right; margin-bottom: 20px; font-size: 14px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #e2e8f0; padding: 12px; text-align: center; }
-        th { background-color: #f8fafc; font-weight: 600; }
-        .signature-img { max-height: 60px; display: block; margin: 0 auto; }
-        .status-signed { color: #059669; font-weight: bold; }
-        @media print {
-            .no-print { display: none; }
-            body { padding: 0; }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>班表簽核匯總報告</title>
+  <style>
+    /* =========================
+       A4 列印設定
+    ========================= */
+    @page { size: A4 portrait; margin: 10mm; }
+
+    body{
+      font-family:"Noto Sans TC", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+      color:#111827;
+      margin:0;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    /* =========================
+       Header / 副標題資訊
+    ========================= */
+    .header{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-end;
+      margin: 0 0 6mm 0;
+    }
+    h1{
+      margin:0;
+      font-size:18px;
+      font-weight:900;
+      letter-spacing:1px;
+    }
+    .sub{
+      text-align:right;
+      font-size:10.5px;
+      color:#374151;
+      line-height:1.25;
+      white-space:nowrap;
+    }
+    .sub b{ color:#111827; }
+
+    /* =========================
+       兩欄並列（關鍵）
+       - 想改回單欄：把 .grid 的 column-count 改成 1
+    ========================= */
+    .grid{
+      column-count: 2;       /* ✅ 兩欄並列 */
+      column-gap: 8mm;
+    }
+
+    .block{
+      break-inside: avoid;
+      -webkit-column-break-inside: avoid;
+      margin-bottom: 6mm;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      table-layout:fixed;
+      font-size:10.5px;
+    }
+    thead th{
+      background:#f3f4f6;
+      border:1px solid #e5e7eb;
+      padding:5px 6px;
+      font-weight:800;
+      color:#111827;
+      text-align:center;
+    }
+    tbody td{
+      border:1px solid #e5e7eb;
+      padding:4px 6px;
+      text-align:center;
+      vertical-align:middle;
+      line-height:1.15;
+      word-break:break-word;
+    }
+    tbody tr{ height: 26px; }
+
+    /* 欄寬（單欄時也適用） */
+    .col-staff { width: 22%; }
+    .col-name  { width: 18%; }
+    .col-stat  { width: 20%; }
+    .col-sign  { width: 40%; }
+
+    .status-signed{ color:#059669; font-weight:900; }
+    .status-pending{ color:#dc2626; font-weight:900; }
+
+    .signature-wrap{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      height:22px;
+      overflow:hidden;
+    }
+    .signature-img{
+      max-height:22px;
+      max-width:100%;
+      object-fit:contain;
+      display:block;
+    }
+    .no-sign{
+      font-size:10px;
+      color:#6b7280;
+    }
+
+    .no-print{ margin-top:10px; text-align:center; }
+    @media print{ .no-print{ display:none; } }
+  </style>
 </head>
+
 <body>
+  {{
+    /* =========================
+       1) 取資料與統計
+    ========================= */
+    (() => {
+      const rows = Array.isArray($json.rows) ? $json.rows : [];
 
-    <h1>班表簽核匯總報告</h1>
-    <div class="report-info">
-        列印時間：{{ $now.format('YYYY-MM-DD HH:mm') }}
-    </div>
+      // task_id：優先用 $json.task_id，沒有就從第一筆抓
+      const taskId = $json.task_id || (rows[0] && rows[0].task_id) || '';
 
-    <table>
-        <thead>
-            <tr>
-                <th>任務編號 (Task ID)</th>
-                <th>員工編號 (Staff ID)</th>
-                <th>同仁姓名</th>
-                <th>簽核狀態</th>
-                <th>簽核時間</th>
-                <th>電子簽名檔</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>{{ $json.task_id }}</td>
-                <td>{{ $json.staff_id }}</td>
-                <td>{{ $json.name }}</td>
-                <td class="status-signed">已完成簽核</td>
-                <td>{{ $json.signed_at }}</td>
-                <td>
-                    <img src="{{ $json.schedule_json }}" class="signature-img" alt="簽名檔">
-                </td>
-            </tr>
-        </tbody>
-    </table>
+      // sign_month：支援 "2026-03" / "202603" / undefined
+      const rawMonth = $json.sign_month || (rows[0] && rows[0].sign_month) || '';
+      let ym = '';
+      if (rawMonth) {
+        const s = String(rawMonth).trim();
+        if (/^\d{4}-\d{2}$/.test(s)) ym = s;
+        else if (/^\d{6}$/.test(s)) ym = s.slice(0,4) + '-' + s.slice(4,6);
+      }
+      // 沒提供 sign_month，就用台灣時間的現在年月
+      if (!ym) ym = $now.setZone('Asia/Taipei').format('YYYY-MM');
 
-    <div class="no-print" style="margin-top: 30px; text-align: center;">
-        <button onclick="window.print()" style="padding: 10px 20px; cursor: pointer;">列印此報告</button>
-    </div>
+      // 已簽核人數：status 是 signed / 已簽核 / done 都算
+      const isSigned = (r) => {
+        const st = String(r.status ?? '').toLowerCase();
+        return st === 'signed' || st === 'done' || st === '已簽核' || st === 'completed';
+      };
+      const total = rows.length;
+      const signedCount = rows.filter(isSigned).length;
 
+      // =========================
+      // 2) 兩欄並列切分：每欄 10 人，總共 20 人剛好一頁
+      //    如果人數超過 20，也會自動延伸到下一頁（瀏覽器會自動分頁）
+      // =========================
+      const chunkSize = 10;
+      const chunks = [];
+      for (let i = 0; i < rows.length; i += chunkSize) {
+        chunks.push(rows.slice(i, i + chunkSize));
+      }
+
+      // =========================
+      // 3) 輸出 HTML
+      // =========================
+      return `
+        <div class="header">
+          <h1>班表簽核匯總報告</h1>
+          <div class="sub">
+            簽核年月：<b>${ym}</b><br/>
+            簽核人數：<b>${signedCount}</b> / <b>${total}</b><br/>
+            任務編號：<b>${taskId}</b><br/>
+            列印時間：${$now.setZone('Asia/Taipei').format('YYYY-MM-DD HH:mm')}
+          </div>
+        </div>
+
+        <div class="grid">
+          ${chunks.map(group => `
+            <div class="block">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="col-staff">員編</th>
+                    <th class="col-name">姓名</th>
+                    <th class="col-stat">狀態</th>
+                    <th class="col-sign">電子簽名</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${group.map(r => {
+                    const signed = isSigned(r);
+                    const staff = r.staff_id ?? '';
+                    const name = r.name ?? '';
+                    const statusText = signed ? '已簽核' : '未簽核';
+
+                    // signature 欄位：支援 r.signature / r.signature_dataurl / r.signature_url（任一有 data:image 開頭就當圖）
+                    const sig =
+                      r.signature || r.signature_dataurl || r.signature_url || '';
+
+                    const sigHtml = (sig && String(sig).startsWith('data:image'))
+                      ? `<div class="signature-wrap"><img class="signature-img" src="${sig}" alt="signature"></div>`
+                      : `<span class="no-sign">未簽核</span>`;
+
+                    return `
+                      <tr>
+                        <td>${staff}</td>
+                        <td>${name}</td>
+                        <td class="${signed ? 'status-signed' : 'status-pending'}">${statusText}</td>
+                        <td>${sigHtml}</td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+          `).join('')}
+        </div>
+
+        <div class="no-print">
+          <button onclick="window.print()" style="padding:8px 16px; cursor:pointer;">列印此報表</button>
+        </div>
+      `;
+    })()
+  }}
 </body>
 </html>
