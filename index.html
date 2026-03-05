@@ -791,7 +791,7 @@ async function handleDownloadAuth(taskId) {
 
 // 修正後的複製連結功能
 function copyLink(taskId) {
-  const signUrl = `${window.location.origin}/sign.html?id=${taskId}`;
+  const signUrl = `${window.location.origin}/confirm.html?id=${taskId}`;
   navigator.clipboard.writeText(signUrl).then(() => {
     alert(`任務 ${taskId} 連結已複製到剪貼簿！`);
   });
