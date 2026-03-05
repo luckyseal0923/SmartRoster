@@ -232,7 +232,7 @@ if (record.sign_month) {
 if (Array.isArray(record.schedule) && record.schedule.length > 0) {
 
   record.schedule.sort((a, b) => {
-    return new Date(a.date) - new Date(b.date);
+    return Number(a.date) - Number(b.date);
   });
 
   record.schedule.forEach(entry => {
