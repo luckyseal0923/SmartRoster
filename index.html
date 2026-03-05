@@ -171,727 +171,120 @@ th{color:var(--muted);font-weight:600;}
 </head>
 
 <body>
+<body>
 <div class="container">
+    <header>
+        <h1>SmartRoster</h1>
+        <p>智慧班表簽核系統</p>
+    </header>
 
-<header>
-  <h1>SmartRoster</h1>
-  <p>智慧班表簽核系統</p>
-</header>
-
-<!-- ===== 建立新任務 ===== -->
-<div class="card">
-  <h3>📌 建立新簽核任務</h3>
-
-  <div class="form-grid">
-    <div>
-      <label>任務建立者</label>
-      <input id="creator">
-    </div>
-
-    <div>
-      <label>員工編號</label>
-      <input id="staffId">
-    </div>
-
-    <div>
-      <label>單位別</label>
-      <input id="unit">
-    </div>
-
-    <div>
-      <label>簽核月份</label>
-      <input id="month" type="month">
-    </div>
-
-    <div>
-      <label>設定密碼（至少 6 碼）</label>
-      <input id="password" type="password">
-    </div>
-  </div>
-
-<div class="upload-box">
-  <div style="font-size:18px;margin-bottom:8px;">
-    📁 <strong>上傳班表 Excel</strong>
-  </div>
-
-  <p style="color:var(--muted);margin-bottom:12px;">
-    用於辨識待簽核人數
-  </p>
-
-  <div id="filePicker" style="display:flex;align-items:center;gap:10px;">
-    <label for="fileInput" class="file-btn">
-      ⬆ 選擇檔案
-    </label>
-    <span id="fileName" style="color:#374151;"></span>
-    <button id="clearFileBtn"
-            onclick="clearFile()"
-            style="display:none;border:none;background:none;color:#b91c1c;cursor:pointer;font-size:18px;">
-      ✖
-    </button>
-  </div>
-
-  <input id="fileInput" type="file" accept=".xlsx,.xls" style="display:none;">
-</div>
-
-  <div class="actions">
-    <button class="accent" onclick="runCheck()">🔍 查核任務辨識</button>
-  </div>
-</div>
-
-<!-- ===== 任務清單（舊功能完整保留） ===== -->
-<div class="card">
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-    <h3>📊 任務清單</h3>
-    <div style="display: flex; gap: 8px;">
-      <input id="taskSearch" placeholder="搜尋建立者、單位、月份..." style="width: 250px; padding: 6px 12px; border-radius: 8px;">
-    </div>
-  </div>
-
-  <table>
-    <thead>
-      <tr id="taskTableHeader">
-        <th style="cursor:pointer;" onclick="setSort('created_at')">任務編碼 / 時間 ↕</th>
-        <th style="cursor:pointer;" onclick="setSort('creator')">建立者 ↕</th>
-        <th style="cursor:pointer;" onclick="setSort('unit')">單位 ↕</th>
-        <th style="cursor:pointer;" onclick="setSort('month')">月份 ↕</th>
-        <th style="cursor:pointer;" onclick="setSort('progress')">完成度 ↕</th>
-        <th>功能</th>
-      </tr>
-    </thead>
-    <tbody id="taskTableBody">
-      <tr><td colspan="6" style="text-align:center;">載入中...</td></tr>
-    </tbody>
-  </table>
-</div>
-
-</div>
-
-<!-- ===== 查核 Modal（Demo） ===== -->
-<div class="modal" id="modal">
-  <div class="modal-box">
-    <h3>🔍 任務辨識結果</h3>
-
-    <!-- 系統查核狀態（原本就有） -->
-    <div id="checkContent"></div>
-
-    <!-- 系統成功辨識清單 -->
-    <div id="signerList" style="margin-top:16px;"></div>
-
-    <hr style="margin:20px 0;">
-
-    <!-- 手動補登 -->
-    <h4>➕ 手動補登簽核人</h4>
-    <div style="display:flex;gap:8px;">
-      <input id="manualStaffId" placeholder="員工編號">
-      <input id="manualName" placeholder="姓名（選填）">
-      <button onclick="addManualSigner()">新增</button>
-    </div>
-
-    <ul id="manualList" style="margin-top:10px;"></ul>
-
-    <br>
-<div style="display:flex;justify-content:flex-end;gap:12px;">
-  <button class="secondary" onclick="cancelCreate()">取消</button>
-<button id="createBtn"
-        class="primary"
-        onclick="confirmCreate()">
-  建立任務
-</button></div>  </div>
-</div>
-
-<script>
-  /* ===== DOM 元素快取（一定要有） ===== */
-const creator = document.getElementById("creator");
-const staffId = document.getElementById("staffId");
-const unit = document.getElementById("unit");
-const month = document.getElementById("month");
-const password = document.getElementById("password");
-
-const manualStaffId = document.getElementById("manualStaffId");
-const manualName = document.getElementById("manualName");
-
-const fileInput = document.getElementById("fileInput");
-const fileName = document.getElementById("fileName");
-const clearFileBtn = document.getElementById("clearFileBtn");
-
-const createBtn = document.getElementById("createBtn");
-let detectedSigners = [];
-let manualSigners = [];
-let allTasks = [];      // 儲存從 API 抓回來的原始資料
-let currentSort = { key: 'created_at', asc: false }; // 預設：時間降冪 (最新在前)
-  
-/* ===== 分頁狀態 ===== */
-let signerPage = 1;
-const SIGNERS_PER_PAGE = 10; // 🔧 一頁幾個人（10 / 15 / 20 都可以）
-  
-/* ===== 即時欄位檢查 ===== */
-function validateForm(){
-  const now = new Date();
-  const m = month.value;
-  const monthOK = m && new Date(m+"-01") >= new Date(now.getFullYear(),now.getMonth(),1);
-
-  const ok =
-    creator.value &&
-    staffId.value &&
-    unit.value &&
-    monthOK &&
-    password.value.length >= 6;
-
-  createBtn.disabled = !ok;
-}
-
-["creator","staffId","unit","month","password"].forEach(id=>{
-  document.getElementById(id).addEventListener("input",validateForm);
-});
-
-/* ===== 查核辨識（正確 async 版本） ===== */
-async function runCheck(){
-  const modal = document.getElementById("modal");
-  const content = document.getElementById("checkContent");
-
-  if (!fileInput.files.length) {
-    alert("請先上傳班表 Excel");
-    return;
-  }
-
-  const fd = new FormData();
-  fd.append("file", fileInput.files[0]);
-
-  content.innerHTML = "⏳ 辨識中，請稍候…";
-  modal.style.display = "flex";
-
-  try {
-    const res = await fetch(
-      "https://chihwei-n8n.zeabur.app/webhook/roster-check",
-      { method: "POST", body: fd }
-    );
-
-    /* ✅ 先拿原始文字（關鍵） */
-    const text = await res.text();
-    let data;
-
-    try {
-      data = JSON.parse(text);
-    } catch (e) {
-      console.error("⚠️ 非 JSON 回傳：", text);
-      throw new Error("後端回傳格式錯誤");
-    }
-
-    /* ✅ 再來才判斷內容 */
-    if (!res.ok || data.status !== "ok") {
-      content.innerHTML = `
-        <div class="status-bad">
-          ❌ ${data.message || "查核失敗"}
+    <div class="card">
+        <h3>📌 建立新簽核任務</h3>
+        <div class="form-grid">
+            <div><label>任務建立者</label><input id="creator"></div>
+            <div><label>員工編號</label><input id="staffId"></div>
+            <div><label>單位別</label><input id="unit"></div>
+            <div><label>簽核月份</label><input id="month" type="month"></div>
+            <div><label>設定密碼（至少 6 碼）</label><input id="password" type="password"></div>
         </div>
-      `;
-      return;
-    }
 
-    detectedSigners = data.signers || [];
-    manualSigners = [];
-    signerPage = 1;
+        <div class="upload-box">
+            <div style="font-size:18px;margin-bottom:8px;">📁 <strong>上傳班表 Excel</strong></div>
+            <p style="color:var(--muted);margin-bottom:12px;">用於辨識待簽核人數</p>
+            <div id="filePicker" style="display:flex;align-items:center;gap:10px;">
+                <label for="fileInput" class="file-btn">⬆ 選擇檔案</label>
+                <span id="fileName" style="color:#374151;"></span>
+                <button id="clearFileBtn" onclick="clearFile()" style="display:none;border:none;background:none;color:#b91c1c;cursor:pointer;font-size:18px;">✖</button>
+            </div>
+            <input id="fileInput" type="file" accept=".xlsx,.xls" style="display:none;">
+        </div>
 
-    content.innerHTML = `
-      <div class="status-ok">✔ 查核通過</div>
-      系統辨識簽核人數：${detectedSigners.length} 人
-    `;
-
-    renderSignerList();
-
-  } catch (err) {
-    console.error(err);
-    content.innerHTML = `
-      <div class="status-bad">
-        ❌ 系統錯誤<br>
-        ${err.message || "無法連線至辨識服務"}
-      </div>
-    `;
-  }
-}
-
-  function removeDetected(index){
-  if (!confirm("確定要移除此簽核人？")) return;
-  detectedSigners.splice(index, 1);
-  renderSignerList();
-}
-  function removeManual(index){
-  manualSigners.splice(index, 1);
-  renderManualList();
-}
-/* ===== 顯示辨識成功清單 ===== */
-function renderSignerList(){
-  const box = document.getElementById("signerList");
-
-  const total = detectedSigners.length;
-  const totalPages = Math.ceil(total / SIGNERS_PER_PAGE);
-  if (signerPage > totalPages) signerPage = totalPages || 1;
-
-  const start = (signerPage - 1) * SIGNERS_PER_PAGE;
-  const end = start + SIGNERS_PER_PAGE;
-  const pageData = detectedSigners.slice(start, end);
-
-  let html = `
-    <h4>📋 已辨識簽核人（${total} 人）</h4>
-
-<div style="max-height:420px;overflow:auto;border:1px solid #e5e7eb;border-radius:8px;">      <table style="width:100%;font-size:14px;">
-        <tr>
-          <th style="padding:6px;">員工編號</th>
-          <th style="padding:6px;">姓名</th>
-          <th style="width:40px;"></th>
-        </tr>
-  `;
-
-  pageData.forEach((s,idx)=>{
-    const realIndex = start + idx; // ⚠️ 關鍵：對應原陣列
-    html += `
-      <tr>
-        <td style="padding:6px;">${s.staffId}</td>
-        <td style="padding:6px;">${s.name || "-"}</td>
-        <td style="padding:6px;">
-          <button onclick="removeDetected(${realIndex})"
-            style="border:none;background:none;color:#b91c1c;cursor:pointer;">
-            ✖
-          </button>
-        </td>
-      </tr>
-    `;
-  });
-
-  html += `
-      </table>
+        <div class="actions">
+            <button class="accent" onclick="runCheck()">🔍 查核任務辨識</button>
+        </div>
     </div>
 
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
-      <button ${signerPage===1?"disabled":""}
-        onclick="changeSignerPage(-1)">◀ 上一頁</button>
-
-      <span>第 ${signerPage} / ${totalPages || 1} 頁</span>
-
-      <button ${signerPage===totalPages?"disabled":""}
-        onclick="changeSignerPage(1)">下一頁 ▶</button>
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3>📊 任務清單</h3>
+            <div style="display: flex; gap: 8px;">
+                <input id="taskSearch" placeholder="搜尋建立者、單位、月份..." style="width: 250px; padding: 6px 12px; border-radius: 8px;">
+            </div>
+        </div>
+        <table>
+            <thead>
+                <tr id="taskTableHeader">
+                    <th style="cursor:pointer;" onclick="setSort('created_at')">任務編碼 / 時間 ↕</th>
+                    <th style="cursor:pointer;" onclick="setSort('creator')">建立者 ↕</th>
+                    <th style="cursor:pointer;" onclick="setSort('unit')">單位 ↕</th>
+                    <th style="cursor:pointer;" onclick="setSort('month')">月份 ↕</th>
+                    <th style="cursor:pointer;" onclick="setSort('progress')">完成度 ↕</th>
+                    <th>功能</th>
+                </tr>
+            </thead>
+            <tbody id="taskTableBody">
+                <tr><td colspan="6" style="text-align:center;">載入中...</td></tr>
+            </tbody>
+        </table>
     </div>
-  `;
-
-  box.innerHTML = html;
-}
-
-  function changeSignerPage(delta){
-  signerPage += delta;
-  if (signerPage < 1) signerPage = 1;
-  renderSignerList();
-}
-  
-/* ===== 手動補登 ===== */
-function addManualSigner(){
-  const id = manualStaffId.value.trim();
-  const name = manualName.value.trim();
-
-  if (!id) {
-    alert("員工編號必填");
-    return;
-  }
-
-  // 檢查是否重複
-  if (
-    detectedSigners.some(s => s.staffId === id) ||
-    manualSigners.some(s => s.staffId === id)
-  ) {
-    alert("此員工編號已存在於清單中");
-    return;
-  }
-
-  // 確保欄位名稱為 staffId (對應後端 Code 節點)
-  manualSigners.push({ staffId: id, name: name });
-  
-  manualStaffId.value = "";
-  manualName.value = "";
-  renderManualList();
-}
-
-function renderManualList(){
-  const ul = document.getElementById("manualList");
-  ul.innerHTML = "";
-
-  manualSigners.forEach((s,idx)=>{
-    const li = document.createElement("li");
-    li.style.display="flex";
-    li.style.justifyContent="space-between";
-    li.style.alignItems="center";
-    li.style.marginBottom="6px";
-
-    li.innerHTML = `
-      <span>${s.staffId} ${s.name || ""}</span>
-      <button onclick="removeManual(${idx})" style="border:none;background:none;color:#b91c1c;cursor:pointer;">✖</button>
-    `;
-    ul.appendChild(li);
-  });
-}
-
-/* ===== 建立任務（正式版，呼叫 roster-create） ===== */
-async function confirmCreate(){
-
-  if (!fileInput.files.length) {
-    alert("找不到原始 Excel 檔案");
-    return;
-  }
-
-  createBtn.textContent = "建立中…";
-  createBtn.disabled = true;
-
-  try {
-    const fd = new FormData();
-
-    // ===== 基本任務資料 =====
-    fd.append("creator", creator.value);
-    fd.append("creator_staff_id", staffId.value);
-    fd.append("unit", unit.value);
-    fd.append("sign_month", month.value);
-    fd.append("password", password.value);
-
-    // ===== 簽核人資料 =====
-    fd.append("detected_signers", JSON.stringify(detectedSigners));
-    fd.append("manual_signers", JSON.stringify(manualSigners));
-
-    // ===== Excel 原始檔 =====
-    fd.append("file", fileInput.files[0]);
-
-    const res = await fetch(
-      "https://chihwei-n8n.zeabur.app/webhook/roster-create",
-      {
-        method: "POST",
-        body: fd
-      }
-    );
-
-    // ✅ 先拿原始文字防呆
-    const text = await res.text();
-    let data;
-
-    try {
-      data = JSON.parse(text);
-    } catch (e) {
-      console.error("⚠️ 非 JSON 回傳：", text);
-      throw new Error("後端回傳格式錯誤");
-    }
-if (!res.ok || data.status !== "ok") {
-      throw new Error(data.message || "任務建立失敗");
-    }
-
-    // 📍 1. 準備通知內容
-    const tid = data.task_id;
-    const confirmUrl = `https://smartroster.zeabur.app/confirm.html?id=${tid}`;
-    let expireDisplay = "14 天內"; 
-    if (data.expires_at) {
-        const d = new Date(data.expires_at);
-        expireDisplay = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
-    }
-
-    const shareMessage = `同仁您好，請點擊下方連結確認本月班表並完成簽核：\n🔗 ${confirmUrl}\n\n⚠️ 請於 ${expireDisplay} 前完成確認，逾期連結將失效。`;
-
-    // 📍 2. 將內容塞入新彈窗並顯示
-    document.getElementById("shareText").innerText = shareMessage;
-    document.getElementById("successModal").style.display = "flex";
-
-    // 📍 3. 清除原本的表單與關閉建立視窗
-    document.getElementById("creator").value = "";
-    document.getElementById("staffId").value = "";
-    document.getElementById("unit").value = "";
-    document.getElementById("month").value = "";
-    document.getElementById("password").value = "";
-    clearFile(); 
-    detectedSigners = [];
-    manualSigners = [];
-    renderManualList();
-    validateForm(); 
-    fetchTasks();
-    document.getElementById("modal").style.display = "none";
-
-  } catch (err) {
-    console.error(err);
-    alert(`❌ 建立任務失敗\n${err.message || "系統錯誤"}`);
-  } finally {
-    createBtn.textContent = "建立任務";
-    createBtn.disabled = false;
-  }
-}
-  
-/* ===== 複製連結 ===== */
-function copyLink(taskId) {
-  const signUrl = `${window.location.origin}/sign.html?id=${taskId}`;
-  navigator.clipboard.writeText(signUrl).then(() => {
-    alert(`任務 ${taskId} 連結已複製到剪貼簿！`);
-  });
-}
-
-  function cancelCreate(){
-  if (!confirm("確定要取消建立任務？")) return;
-  document.getElementById("modal").style.display = "none";
-}
-
-fileInput.addEventListener("change", () => {
-  if (fileInput.files.length) {
-    fileName.textContent = fileInput.files[0].name;
-    clearFileBtn.style.display = "inline";
-  }
-});
-  
-function clearFile(){
-  fileInput.value = "";
-  fileName.textContent = "";
-  clearFileBtn.style.display = "none";
-}
-
-/* ===== 任務清單增強功能 (搜尋與排序) ===== */
-
-// 1. 初始化監聽：當 DOM 載入後執行
-window.addEventListener('DOMContentLoaded', () => {
-    fetchTasks();
-    // 綁定搜尋框事件 (假設您已經在 HTML 加入 id="taskSearch" 的 input)
-    const searchInput = document.getElementById("taskSearch");
-    if(searchInput) {
-        searchInput.addEventListener("input", (e) => renderTasks(e.target.value));
-    }
-});
-
-// 2. 核心：從後端抓取資料
-async function fetchTasks() {
-  const tbody = document.getElementById("taskTableBody");
-  if (!tbody) return;
-
-  try {
-    const res = await fetch("https://chihwei-n8n.zeabur.app/webhook/roster-list");
-    allTasks = await res.json();
-
-    if (!allTasks || allTasks.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">目前無任務</td></tr>';
-      return;
-    }
-
-    renderTasks(); // 抓完資料立即進行第一次渲染 (預設排序已設為時間降冪)
-  } catch (err) {
-    console.error("載入任務清單失敗:", err);
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:red;">無法載入資料</td></tr>';
-  }
-}
-
-// 3. 設置排序欄位並重新渲染
-function setSort(key) {
-  if (currentSort.key === key) {
-    currentSort.asc = !currentSort.asc; // 同欄位再次點擊則反序
-  } else {
-    currentSort.key = key;
-    currentSort.asc = true;
-  }
-  renderTasks(document.getElementById("taskSearch")?.value || "");
-}
-
-// 4. 核心：過濾、排序與顯示渲染
-function renderTasks(filterKeyword = "") {
-  const tbody = document.getElementById("taskTableBody");
-  const keyword = filterKeyword.toLowerCase();
-
-  // A. 過濾邏輯
-  let filtered = allTasks.filter(task => {
-    return (
-      (task.task_id && String(task.task_id).toLowerCase().includes(keyword)) ||
-      (task.creator && String(task.creator).toLowerCase().includes(keyword)) ||
-      (task.unit && String(task.unit).toLowerCase().includes(keyword)) ||
-      (task.month && String(task.month).toLowerCase().includes(keyword))
-    );
-  });
-
-  // B. 排序邏輯
-  filtered.sort((a, b) => {
-    let valA = a[currentSort.key];
-    let valB = b[currentSort.key];
-
-    // 處理空值避免報錯
-    if (valA === undefined || valA === null) valA = "";
-    if (valB === undefined || valB === null) valB = "";
-
-    // 針對進度或計數等數字進行排序
-    if (typeof valA === 'number' && typeof valB === 'number') {
-      return currentSort.asc ? valA - valB : valB - valA;
-    }
-    
-    // 針對日期或字串進行排序
-    return currentSort.asc 
-      ? String(valA).localeCompare(String(valB)) 
-      : String(valB).localeCompare(String(valA));
-  });
-
-  // C. 繪製 HTML
-  tbody.innerHTML = "";
-  filtered.forEach(task => {
-    const progress = task.progress || 0;
-    const dateObj = new Date(task.created_at);
-    const dateStr = dateObj.toLocaleDateString('zh-TW');
-    const timeStr = dateObj.toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
-
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-<td>
-  <!-- 時間：主要資訊（上方、顯著） -->
-  <div style="
-    font-size: 12px;
-    font-weight: 600;
-    color: #065f46;
-    background: #ecfdf5;
-    display: inline-block;
-    padding: 4px 8px;
-    border-radius: 6px;
-    margin-bottom: 6px;
-  ">
-    📅 ${dateStr} ${timeStr}
-  </div>
-
-  <!-- 任務編碼：次要資訊（下方、低顯著） -->
-  <div style="
-    font-size: 12px;
-    color: #6b7280;
-    margin-top: 2px;
-  ">
-    任務編碼：${task.task_id}
-  </div>
-</td>
-      <td style="font-weight: 500;">${task.creator || '-'}</td>
-      <td>${task.unit}</td>
-      <td>${task.month}</td>
-      <td>
-        <div class="progress"><div class="progress-bar" style="width:${progress}%"></div></div>
-        <span style="font-size: 12px;">${progress}% (${task.signed_count}/${task.signer_count})</span>
-      </td>
-      <td>
-        <div style="display: flex; gap: 8px;">
-          <button class="copy" onclick="copyLink('${task.task_id}')" style="padding: 4px 8px; background: none; border: 1px solid var(--border); border-radius: 6px;" title="複製連結">🔗</button>
-          <button class="primary" onclick="handleDownloadAuth('${task.task_id}')" ...>📥 下載</button>       
 </div>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
 
-  if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">找不到符合條件的任務</td></tr>';
-  }
-}
-
-
-
-// 核心功能：下載前驗證帳密並跳轉
-async function handleDownloadAuth(taskId) {
-  // 1. 彈出輸入視窗（員編與密碼）
-  const authUser = prompt("請輸入管理員員編：");
-  if (!authUser) return;
-
-  const authPwd = prompt("請輸入該任務設定的 6 位數密碼：");
-  if (!authPwd) return;
-
-  // 2. 組合報表 Webhook 網址，並帶入驗證參數
-  // 這裡的參數名稱 auth_user 與 auth_pwd 需與您 n8n Webhook 的篩選邏輯對應
-  const reportUrl = `https://chihwei-n8n.zeabur.app/webhook/roster-report?task_id=${taskId}&auth_user=${authUser}&auth_pwd=${authPwd}`;
-
-  // 3. 直接開啟新分頁（n8n 端驗證失敗會顯示錯誤訊息，成功則顯示 HTML）
-  window.open(reportUrl, '_blank');
-}
-
-// 修正後的複製連結功能
-function copyLink(taskId) {
-  const signUrl = `${window.location.origin}/sign.html?id=${taskId}`;
-  navigator.clipboard.writeText(signUrl).then(() => {
-    alert(`任務 ${taskId} 連結已複製到剪貼簿！`);
-  });
-}
-
-// 複製訊息並關閉
-function copyShareText() {
-  const text = "【SmartRoster 班表確認通知】\n\n" + document.getElementById("shareText").innerText;
-  navigator.clipboard.writeText(text).then(() => {
-    alert("訊息已複製到剪貼簿，請直接貼上傳送給同仁！");
-    closeSuccessModal();
-    // 📍 建議加上這行，確保清單是最新的
-    fetchTasks();
-  });
-}
-
-// 關閉通知彈窗
-function closeSuccessModal() {
-  document.getElementById("successModal").style.display = "none";
-}
-  let targetTaskId = ""; // 全域變數，紀錄目前要下載哪一個任務
-
-// 1. 點擊「下載」按鈕時觸發
-function handleDownloadAuth(taskId) {
-    targetTaskId = taskId;
-    // 清空上次輸入的內容
-    document.getElementById("auth_user").value = "";
-    document.getElementById("auth_pwd").value = "";
-    // 顯示畫面中間的跳窗
-    document.getElementById("authModal").style.display = "flex";
-}
-
-// 2. 點擊「取消」時觸發
-function closeAuthModal() {
-    document.getElementById("authModal").style.display = "none";
-}
-
-// 3. 綁定「送出驗證」按鈕行為
-document.getElementById("confirmAuthBtn").addEventListener("click", function() {
-    const user = document.getElementById("auth_user").value.trim();
-    const pwd = document.getElementById("auth_pwd").value.trim();
-
-    if (!user || !pwd) {
-        alert("員編與密碼皆為必填！");
-        return;
-    }
-
-    // 組合報表 Webhook URL 並帶入驗證參數
-    const reportUrl = `https://chihwei-n8n.zeabur.app/webhook/roster-report?task_id=${targetTaskId}&auth_user=${user}&auth_pwd=${pwd}`;
-    
-    // 開啟報表頁面
-    window.open(reportUrl, '_blank');
-    
-    // 關閉跳窗
-    closeAuthModal();
-});
-</script>
+<div class="modal" id="modal">
+    <div class="modal-box">
+        <h3>🔍 任務辨識結果</h3>
+        <div id="checkContent"></div>
+        <div id="signerList" style="margin-top:16px;"></div>
+        <hr style="margin:20px 0;">
+        <h4>➕ 手動補登簽核人</h4>
+        <div style="display:flex;gap:8px;">
+            <input id="manualStaffId" placeholder="員工編號">
+            <input id="manualName" placeholder="姓名（選填）">
+            <button onclick="addManualSigner()">新增</button>
+        </div>
+        <ul id="manualList" style="margin-top:10px;"></ul>
+        <br>
+        <div style="display:flex;justify-content:flex-end;gap:12px;">
+            <button class="secondary" onclick="cancelCreate()">取消</button>
+            <button id="createBtn" class="primary" onclick="confirmCreate()">建立任務</button>
+        </div>
+    </div>
+</div>
 
 <div class="modal" id="successModal" style="display: none; align-items: center; justify-content: center;">
-  <div class="modal-box" style="width: 500px; text-align: center;">
-    <div style="font-size: 50px; margin-bottom: 10px;">✅</div>
-    <h3 style="color: var(--accent); margin-bottom: 20px;">任務建立完成！</h3>
-    
-    <div style="background: #f9fafb; border: 1px solid var(--border); border-radius: 12px; padding: 20px; text-align: left; margin-bottom: 24px;">
-      <p style="margin: 0 0 10px 0; font-weight: 600; font-size: 15px;">【SmartRoster 班表確認通知】</p>
-      <p id="shareText" style="margin: 0; font-size: 14px; line-height: 1.6; white-space: pre-wrap; color: var(--primary);"></p>
+    <div class="modal-box" style="width: 500px; text-align: center;">
+        <div style="font-size: 50px; margin-bottom: 10px;">✅</div>
+        <h3 style="color: var(--accent); margin-bottom: 20px;">任務建立完成！</h3>
+        <div style="background: #f9fafb; border: 1px solid var(--border); border-radius: 12px; padding: 20px; text-align: left; margin-bottom: 24px;">
+            <p style="margin: 0 0 10px 0; font-weight: 600; font-size: 15px;">【SmartRoster 班表確認通知】</p>
+            <p id="shareText" style="margin: 0; font-size: 14px; line-height: 1.6; white-space: pre-wrap; color: var(--primary);"></p>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            <button class="accent" onclick="copyShareText()" style="width: 100%;">📋 複製通知訊息並關閉</button>
+            <button class="secondary" onclick="closeSuccessModal()" style="width: 100%;">僅關閉視窗</button>
+        </div>
     </div>
-  </div>
 </div>
-    <div style="display: flex; flex-direction: column; gap: 12px;">
-      <button class="accent" onclick="copyShareText()" style="width: 100%;">📋 複製通知訊息並關閉</button>
-      <button class="secondary" onclick="closeSuccessModal()" style="width: 100%;">僅關閉視窗</button>
-      <div class="modal" id="authModal">
-  <div class="modal-box" style="width: 350px;">
-    <h3 style="text-align: center;">🔐 報表檢視驗證</h3>
-    <p style="font-size: 13px; color: var(--muted); text-align: center; margin-bottom: 20px;">請輸入建立者員編與任務密碼</p>
-    
-    <div style="display: flex; flex-direction: column; gap: 12px;">
-      <div>
-        <label>管理員員編 (帳號)</label>
-        <input id="auth_user" placeholder="請輸入員編">
-      </div>
-      <div>
-        <label>任務密碼</label>
-        <input id="auth_pwd" type="password" placeholder="請輸入 6 位數密碼">
-      </div>
-    </div>
 
-    <div style="display: flex; gap: 12px; margin-top: 24px;">
-      <button class="secondary" onclick="closeAuthModal()" style="flex: 1;">取消</button>
-      <button class="accent" id="confirmAuthBtn" style="flex: 1;">送出驗證</button>
+<div class="modal" id="authModal" style="display: none; align-items: center; justify-content: center;">
+    <div class="modal-box" style="width: 350px;">
+        <h3 style="text-align: center;">🔐 報表檢視驗證</h3>
+        <p style="font-size: 13px; color: var(--muted); text-align: center; margin-bottom: 20px;">請輸入建立者員編與任務密碼</p>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div>
+                <label>管理員員編 (帳號)</label>
+                <input id="auth_user" placeholder="請輸入員編">
+            </div>
+            <div>
+                <label>任務密碼</label>
+                <input id="auth_pwd" type="password" placeholder="請輸入 6 位數密碼">
+            </div>
+        </div>
+        <div style="display: flex; gap: 12px; margin-top: 24px;">
+            <button class="secondary" onclick="closeAuthModal()" style="flex: 1;">取消</button>
+            <button class="accent" id="confirmAuthBtn" style="flex: 1;">送出驗證</button>
+        </div>
     </div>
-  </div>
-</div> 
+</div>
   
 </body>
 </html>
