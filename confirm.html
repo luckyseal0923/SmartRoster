@@ -178,13 +178,37 @@ let currentStaffId = "";
 
 // 📍 2. 頁面載入檢查
 window.onload = function() {
+
   const display = document.getElementById("taskDisplay");
-  if (taskId) {
-    display.innerText = `任務編號：${taskId}`;
-  } else {
+
+  if (!taskId) {
     display.innerHTML = "<b style='color:red;'>錯誤：缺少任務 ID，請洽單位主管。</b>";
     document.querySelector(".search-row button").disabled = true;
+    return;
   }
+
+  display.innerText = `任務編號：${taskId}`;
+
+  /* ===== 從 taskId 解析簽核月份 ===== */
+
+  // task-202604-L9B
+  const match = taskId.match(/task-(\d{6})/);
+
+  if (match) {
+
+    const ym = match[1];   // 202604
+
+    const year = ym.substring(0,4);
+    const month = parseInt(ym.substring(4,6),10);
+
+    const title = document.getElementById("scheduleTitle");
+
+    if (title) {
+      title.innerText = `班表內容｜${year}年${month}月`;
+    }
+
+  }
+
 };
 
 // 📍 3. 查詢班表函數
