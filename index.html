@@ -764,7 +764,7 @@ function renderTasks(filterKeyword = "") {
       <td>
         <div style="display: flex; gap: 8px;">
           <button class="copy" onclick="copyLink('${task.task_id}')" style="padding: 4px 8px; background: none; border: 1px solid var(--border); border-radius: 6px;" title="複製連結">🔗</button>
-          <button class="primary" onclick="prepDownload('${task.task_id}')" style="padding: 4px 8px; font-size: 12px; border-radius: 6px; background: var(--primary); color: white; border: none;">📥 下載</button>
+          <button class="primary" onclick="handleDownloadAuth('${task.task_id}')" style="padding: 4px 8px; font-size: 12px; border-radius: 6px; background: var(--primary); color: white; border: none;">📥 下載</button>
         </div>
       </td>
     `;
@@ -778,9 +778,21 @@ function renderTasks(filterKeyword = "") {
 
 
 
-// 預留的下載按鈕功能
-function prepDownload(taskId) {
-  alert("正在開發中：\n未來將在此輸入帳號密碼，下載任務 [" + taskId + "] 的簽核完整 Excel。");
+// 核心功能：下載前驗證帳密並跳轉
+async function handleDownloadAuth(taskId) {
+  // 1. 彈出輸入視窗（員編與密碼）
+  const authUser = prompt("請輸入管理員員編：");
+  if (!authUser) return;
+
+  const authPwd = prompt("請輸入該任務設定的 6 位數密碼：");
+  if (!authPwd) return;
+
+  // 2. 組合報表 Webhook 網址，並帶入驗證參數
+  // 這裡的參數名稱 auth_user 與 auth_pwd 需與您 n8n Webhook 的篩選邏輯對應
+  const reportUrl = `https://chihwei-n8n.zeabur.app/webhook/roster-report?task_id=${taskId}&auth_user=${authUser}&auth_pwd=${authPwd}`;
+
+  // 3. 直接開啟新分頁（n8n 端驗證失敗會顯示錯誤訊息，成功則顯示 HTML）
+  window.open(reportUrl, '_blank');
 }
 
 // 修正後的複製連結功能
