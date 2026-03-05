@@ -148,7 +148,9 @@
     </div>
 
     <!-- 班表 -->
-    <h3 style="margin-top:16px;">班表內容</h3>
+<h3 style="margin-top:16px;" id="scheduleTitle">
+  班表內容
+</h3>
     <table>
       <thead>
         <tr>
@@ -207,8 +209,33 @@ async function lookup() {
     const tbody = document.getElementById("scheduleTable");
     tbody.innerHTML = "";
 
-    if (Array.isArray(record.schedule) && record.schedule.length > 0) {
-      record.schedule.forEach(entry => {
+// 顯示簽核月份
+if (record.sign_month) {
+  const ym = String(record.sign_month);
+
+  let year, month;
+
+  if (ym.includes("-")) {
+    [year, month] = ym.split("-");
+  } else {
+    year = ym.substring(0,4);
+    month = ym.substring(4,6);
+  }
+
+  month = parseInt(month,10);
+
+  document.getElementById("scheduleTitle").innerText =
+    `班表內容｜${year}年${month}月`;
+}
+
+// 日期排序（小到大）
+if (Array.isArray(record.schedule) && record.schedule.length > 0) {
+
+  record.schedule.sort((a, b) => {
+    return new Date(a.date) - new Date(b.date);
+  });
+
+  record.schedule.forEach(entry => {
         tbody.innerHTML += `
           <tr>
             <td>${entry.date}</td>
