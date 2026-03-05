@@ -715,12 +715,26 @@ function renderTasks(filterKeyword = "") {
   });
 
   // C. 繪製 HTML
-  tbody.innerHTML = "";
+tbody.innerHTML = "";
   filtered.forEach(task => {
     const progress = task.progress || 0;
+    
+    // 📍 修正時間顯示：強制指定台北時區
     const dateObj = new Date(task.created_at);
-    const dateStr = dateObj.toLocaleDateString('zh-TW');
-    const timeStr = dateObj.toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
+    
+    const dateStr = dateObj.toLocaleDateString('zh-TW', {
+      timeZone: 'Asia/Taipei',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+
+    const timeStr = dateObj.toLocaleTimeString('zh-TW', {
+      timeZone: 'Asia/Taipei',
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit'
+    });
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
