@@ -615,14 +615,6 @@ if (!res.ok || data.status !== "ok") {
   }
 }
   
-/* ===== 複製連結 ===== */
-function copyLink(taskId) {
-  const signUrl = `${window.location.origin}/sign.html?id=${taskId}`;
-  navigator.clipboard.writeText(signUrl).then(() => {
-    alert(`任務 ${taskId} 連結已複製到剪貼簿！`);
-  });
-}
-
   function cancelCreate(){
   if (!confirm("確定要取消建立任務？")) return;
   document.getElementById("modal").style.display = "none";
@@ -764,7 +756,7 @@ function renderTasks(filterKeyword = "") {
       <td>
         <div style="display: flex; gap: 8px;">
           <button class="copy" onclick="copyLink('${task.task_id}')" style="padding: 4px 8px; background: none; border: 1px solid var(--border); border-radius: 6px;" title="複製連結">🔗</button>
-          <button class="primary" onclick="handleDownloadAuth('${task.task_id}')" style="padding: 4px 8px; font-size: 12px; border-radius: 6px; background: var(--primary); color: white; border: none;">📥 下載</button>
+          <button class="primary" onclick="handleDownloadAuth('${task.task_id}')" style="padding: 4px 8px; font-size: 12px; border-radius: 6px; background: var(--primary); color: white; border: none;">📥 簽核狀態</button>
         </div>
       </td>
     `;
@@ -818,6 +810,51 @@ function copyShareText() {
 function closeSuccessModal() {
   document.getElementById("successModal").style.display = "none";
 }
+  let downloadTaskId = null;
+
+/* 開啟下載驗證 */
+function handleDownloadAuth(taskId){
+  downloadTaskId = taskId;
+  document.getElementById("downloadAuthModal").style.display="flex";
+}
+
+/* 關閉 */
+function closeDownloadModal(){
+  document.getElementById("downloadAuthModal").style.display="none";
+}
+
+/* 確認下載 */
+function confirmDownload(){
+
+  const authUser = document.getElementById("authUserInput").value.trim();
+  const authPwd  = document.getElementById("authPwdInput").value.trim();
+
+  if(!authUser || !authPwd){
+    alert("請輸入完整帳號與密碼");
+    return;
+  }
+
+  const url =
+    `https://chihwei-n8n.zeabur.app/webhook/roster-report` +
+    `?task_id=${downloadTaskId}` +
+    `&auth_user=${encodeURIComponent(authUser)}` +
+    `&auth_pwd=${encodeURIComponent(authPwd)}`;
+
+  /* 跳轉到報表 */
+  window.location.href = url;
+
+}
+
+  const reportUrl =
+    `https://chihwei-n8n.zeabur.app/webhook/roster-report?task_id=${downloadTaskId}&auth_user=${authUser}&auth_pwd=${authPwd}`;
+
+  window.open(reportUrl,"_blank");
+
+  closeDownloadModal();
+
+  document.getElementById("authUserInput").value="";
+  document.getElementById("authPwdInput").value="";
+}
 </script>
 
 <div class="modal" id="successModal" style="display: none; align-items: center; justify-content: center;">
@@ -836,5 +873,28 @@ function closeSuccessModal() {
     </div>
   </div>
 </div> 
+  <!-- ===== 下載驗證 Modal ===== -->
+<div class="modal" id="downloadAuthModal">
+  <div class="modal-box" style="width:380px;text-align:center;">
+    
+    <h3>🔐 下載報表驗證</h3>
+
+    <div style="margin-top:20px;text-align:left;">
+
+      <label>管理員員編</label>
+      <input id="authUserInput">
+
+      <label style="margin-top:12px;">任務密碼</label>
+      <input id="authPwdInput" type="password">
+
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end;">
+      <button class="secondary" onclick="closeDownloadModal()">取消</button>
+      <button class="primary" onclick="confirmDownload()">確認下載</button>
+    </div>
+
+  </div>
+</div>
 </body>
 </html>
