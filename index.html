@@ -169,6 +169,19 @@ th{color:var(--muted);font-weight:600;}
 .file-btn:hover{
   background:#eef2f7;
 }
+  .month-tag{
+  padding:4px 10px;
+  border-radius:20px;
+  background:#f3f4f6;
+  border:1px solid #d1d5db;
+  font-size:12px;
+  cursor:pointer;
+}
+
+.month-tag.active{
+  background:#374151;
+  color:white;
+}
 </style>
 </head>
 
@@ -244,9 +257,10 @@ th{color:var(--muted);font-weight:600;}
 <div class="card">
   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
     <h3>📊 任務清單</h3>
-    <div style="display: flex; gap: 8px;">
-      <input id="taskSearch" placeholder="搜尋建立者、單位、月份..." style="width: 250px; padding: 6px 12px; border-radius: 8px;">
-    </div>
+<div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+  <input id="taskSearch" placeholder="搜尋建立者、單位、月份..." style="width:250px;padding:6px 12px;border-radius:8px;">
+  <div id="monthTags" style="display:flex;gap:6px;"></div>
+</div>
   </div>
 
   <table>
@@ -320,7 +334,10 @@ const createBtn = document.getElementById("createBtn");
 let detectedSigners = [];
 let manualSigners = [];
 let allTasks = [];      // 儲存從 API 抓回來的原始資料
-let currentSort = { key: 'created_at', asc: false }; // 預設：時間降冪 (最新在前)
+let currentSort = { key: 'created_at', asc: false };
+
+let monthFilter = "all";
+let recentMonths = [];
   
 /* ===== 分頁狀態 ===== */
 let signerPage = 1;
@@ -654,9 +671,21 @@ async function fetchTasks() {
 
   try {
     const res = await fetch("https://chihwei-n8n.zeabur.app/webhook/roster-list");
-    allTasks = await res.json();
+allTasks = await res.json();
 
-    if (!allTasks || allTasks.length === 0) {
+/* 取得最近三個簽核月份 */
+const months = [...new Set(
+  allTasks
+    .map(t => t.month)
+    .filter(Boolean)
+)]
+.sort()
+.reverse();
+
+recentMonths = months.slice(0,3);
+renderMonthTags();
+
+if (!allTasks || allTasks.length === 0) {
       tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">目前無任務</td></tr>';
       return;
     }
@@ -685,8 +714,14 @@ function renderTasks(filterKeyword = "") {
   const keyword = filterKeyword.toLowerCase();
 
   // A. 過濾邏輯
-  let filtered = allTasks.filter(task => {
-    return (
+let filtered = allTasks.filter(task => {
+
+  if(!recentMonths.includes(task.month)) return false;
+
+  if(monthFilter !== "all" && task.month !== monthFilter)
+    return false;
+
+  return (
       (task.task_id && String(task.task_id).toLowerCase().includes(keyword)) ||
       (task.creator && String(task.creator).toLowerCase().includes(keyword)) ||
       (task.unit && String(task.unit).toLowerCase().includes(keyword)) ||
@@ -709,9 +744,9 @@ function renderTasks(filterKeyword = "") {
     }
     
     // 針對日期或字串進行排序
-    return currentSort.asc 
-      ? String(valA).localeCompare(String(valB)) 
-      : String(valB).localeCompare(String(valA));
+return currentSort.asc 
+  ? String(valA).localeCompare(String(valB), 'zh-TW', {numeric:true})
+  : String(valB).localeCompare(String(valA), 'zh-TW', {numeric:true});
   });
 
   // C. 繪製 HTML
@@ -785,24 +820,6 @@ tbody.innerHTML = "";
 }
 
 
-
-// 核心功能：下載前驗證帳密並跳轉
-async function handleDownloadAuth(taskId) {
-  // 1. 彈出輸入視窗（員編與密碼）
-  const authUser = prompt("請輸入管理員員編：");
-  if (!authUser) return;
-
-  const authPwd = prompt("請輸入該任務設定的 6 位數密碼：");
-  if (!authPwd) return;
-
-  // 2. 組合報表 Webhook 網址，並帶入驗證參數
-  // 這裡的參數名稱 auth_user 與 auth_pwd 需與您 n8n Webhook 的篩選邏輯對應
-  const reportUrl = `https://chihwei-n8n.zeabur.app/webhook/roster-report?task_id=${taskId}&auth_user=${authUser}&auth_pwd=${authPwd}`;
-
-  // 3. 直接開啟新分頁（n8n 端驗證失敗會顯示錯誤訊息，成功則顯示 HTML）
-  window.open(reportUrl, '_blank');
-}
-
 // 修正後的複製連結功能
 function copyLink(taskId) {
   const signUrl = `${window.location.origin}/confirm.html?id=${taskId}`;
@@ -861,6 +878,48 @@ function confirmDownload(){
 
   document.getElementById("authUserInput").value="";
   document.getElementById("authPwdInput").value="";
+}
+  function renderMonthTags(){
+
+  const box = document.getElementById("monthTags");
+  if(!box) return;
+
+  box.innerHTML="";
+
+  const allTag=document.createElement("div");
+  allTag.className="month-tag active";
+  allTag.innerText="全部";
+
+  allTag.onclick=()=>{
+    monthFilter="all";
+    renderTasks(document.getElementById("taskSearch")?.value || "");
+    setActiveTag(allTag);
+  };
+
+  box.appendChild(allTag);
+
+  recentMonths.forEach(m=>{
+
+    const tag=document.createElement("div");
+    tag.className="month-tag";
+    tag.innerText=m;
+
+    tag.onclick=()=>{
+      monthFilter=m;
+      renderTasks(document.getElementById("taskSearch")?.value || "");
+      setActiveTag(tag);
+    };
+
+    box.appendChild(tag);
+
+  });
+
+}
+
+function setActiveTag(tag){
+  document.querySelectorAll(".month-tag")
+    .forEach(t=>t.classList.remove("active"));
+  tag.classList.add("active");
 }
 </script>
 
