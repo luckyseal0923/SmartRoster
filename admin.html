@@ -1,338 +1,989 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-<meta charset="UTF-8">
-<title>SmartRoster Admin</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="UTF-8" />
+<title>SmartRoster Admin｜後台管理系統</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
 <style>
-
 :root{
   --primary:#374151;
   --accent:#059669;
-  --bg:#f3f4f6;
+  --bg:#eef2f0;
   --card:#ffffff;
+  --text:#111827;
+  --muted:#6b7280;
   --border:#e5e7eb;
+  --ok:#059669;
+  --warn:#b45309;
+  --bad:#b91c1c;
+  --info:#2563eb;
 }
+
+*{box-sizing:border-box;}
 
 body{
   font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC",sans-serif;
   background:var(--bg);
+  color:var(--text);
   margin:0;
-  padding:30px;
+  padding:32px;
 }
 
 .container{
-  max-width:1300px;
+  max-width:1400px;
   margin:auto;
 }
 
 header{
-  margin-bottom:30px;
+  margin-bottom:24px;
 }
 
 header h1{
   margin:0;
-  font-size:28px;
+  font-size:30px;
 }
 
 header p{
-  color:#6b7280;
+  margin-top:6px;
+  color:var(--muted);
 }
 
 .card{
   background:var(--card);
-  border-radius:14px;
+  border-radius:16px;
   padding:24px;
+  box-shadow:0 8px 24px rgba(0,0,0,.06);
   margin-bottom:24px;
-  box-shadow:0 6px 18px rgba(0,0,0,.05);
 }
 
-.dashboard{
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:20px;
+h3,h4{
+  margin-top:0;
 }
 
-.stat{
-  background:#fafafa;
+/* ===== 工具列 ===== */
+.toolbar{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:16px;
+  margin-bottom:18px;
+}
+
+.toolbar-left{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  align-items:center;
+}
+
+.toolbar-right{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:8px;
+}
+
+input[type="text"], select{
+  padding:10px 12px;
+  border-radius:10px;
   border:1px solid var(--border);
-  border-radius:12px;
-  padding:16px;
+  font-size:14px;
+  min-width:220px;
+  background:#fff;
 }
 
-.stat h3{
-  margin:0;
-  font-size:22px;
+button{
+  padding:10px 14px;
+  border-radius:10px;
+  border:none;
+  font-size:14px;
+  cursor:pointer;
 }
 
-.stat p{
-  margin:4px 0 0 0;
-  color:#6b7280;
+button.primary{
+  background:var(--primary);
+  color:#fff;
+}
+
+button.accent{
+  background:var(--accent);
+  color:#fff;
+}
+
+button.secondary{
+  background:#f3f4f6;
+  color:#374151;
+  border:1px solid #d1d5db;
+}
+
+button.danger{
+  background:var(--bad);
+  color:#fff;
+}
+
+button:disabled{
+  opacity:.5;
+  cursor:not-allowed;
+}
+
+/* ===== 月份標籤 ===== */
+.month-tags{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  justify-content:flex-end;
+}
+
+.month-tag{
+  padding:5px 10px;
+  border-radius:999px;
+  background:#f3f4f6;
+  border:1px solid #d1d5db;
+  font-size:12px;
+  cursor:pointer;
+  white-space:nowrap;
+}
+
+.month-tag.active{
+  background:var(--primary);
+  color:#fff;
+  border-color:var(--primary);
+}
+
+/* ===== 提示列 ===== */
+.info-bar{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-bottom:16px;
+}
+
+.info-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:8px 12px;
+  border-radius:999px;
+  background:#f9fafb;
+  border:1px solid var(--border);
+  font-size:13px;
+  color:#374151;
+}
+
+/* ===== table ===== */
+.table-wrap{
+  overflow:auto;
+  border:1px solid var(--border);
+  border-radius:14px;
 }
 
 table{
   width:100%;
   border-collapse:collapse;
+  min-width:1100px;
+  background:#fff;
 }
 
 th,td{
-  padding:12px;
+  padding:14px 12px;
   border-bottom:1px solid var(--border);
   font-size:14px;
+  text-align:left;
+  vertical-align:middle;
 }
 
 th{
-  text-align:left;
+  color:var(--muted);
+  font-weight:600;
+  background:#fafafa;
+  position:sticky;
+  top:0;
+  z-index:1;
+}
+
+tr:hover td{
+  background:#fcfcfc;
+}
+
+.check-col{
+  width:48px;
+  text-align:center;
+}
+
+.task-meta-time{
+  font-size:12px;
+  font-weight:600;
+  color:#065f46;
+  background:#ecfdf5;
+  display:inline-block;
+  padding:4px 8px;
+  border-radius:6px;
+  margin-bottom:6px;
+}
+
+.task-meta-id{
+  font-size:12px;
   color:#6b7280;
 }
 
 .progress{
   background:#e5e7eb;
-  height:10px;
   border-radius:999px;
+  height:12px;
   overflow:hidden;
-  width:120px;
+  margin-bottom:6px;
+  width:110px;
 }
 
-.bar{
+.progress-bar{
   background:var(--accent);
   height:100%;
+  transition:width .4s ease;
 }
 
-button{
-  border:none;
-  background:var(--primary);
-  color:white;
-  padding:6px 10px;
-  border-radius:6px;
-  cursor:pointer;
-  font-size:12px;
-}
-
-.search{
-  padding:8px 12px;
-  border-radius:8px;
-  border:1px solid var(--border);
-  width:260px;
-}
-
-.actions{
+.row-actions{
   display:flex;
-  gap:6px;
+  flex-wrap:wrap;
+  gap:8px;
 }
 
+.row-actions button{
+  padding:6px 10px;
+  font-size:12px;
+  border-radius:8px;
+}
+
+.status-badge{
+  display:inline-block;
+  font-size:12px;
+  padding:4px 8px;
+  border-radius:999px;
+  font-weight:600;
+}
+
+.status-pending{
+  background:#f3f4f6;
+  color:#4b5563;
+}
+
+.status-progress{
+  background:#ecfdf5;
+  color:#065f46;
+}
+
+.status-done{
+  background:#eff6ff;
+  color:#1d4ed8;
+}
+
+.status-expired{
+  background:#fef2f2;
+  color:#991b1b;
+}
+
+/* ===== Modal ===== */
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.45);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:1000;
+}
+
+.modal-box{
+  background:#fff;
+  border-radius:16px;
+  width:min(1000px,92vw);
+  max-height:88vh;
+  overflow:hidden;
+  box-shadow:0 18px 40px rgba(0,0,0,.18);
+}
+
+.modal-header{
+  padding:18px 22px;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:16px;
+}
+
+.modal-body{
+  padding:20px 22px;
+  overflow:auto;
+  max-height:calc(88vh - 70px);
+}
+
+.close-btn{
+  background:#f3f4f6;
+  color:#374151;
+  border:1px solid #d1d5db;
+  padding:8px 12px;
+  border-radius:10px;
+}
+
+.muted{
+  color:var(--muted);
+}
+
+.empty{
+  text-align:center;
+  color:var(--muted);
+  padding:28px 12px;
+}
+
+/* ===== 明細表 ===== */
+.detail-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
+  margin-bottom:18px;
+}
+
+.detail-card{
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:12px;
+  background:#fafafa;
+}
+
+.detail-card .label{
+  font-size:12px;
+  color:var(--muted);
+  margin-bottom:6px;
+}
+
+.detail-card .value{
+  font-size:15px;
+  font-weight:600;
+}
+
+.small-note{
+  margin-top:10px;
+  font-size:12px;
+  color:#92400e;
+  background:#fffbeb;
+  border:1px solid #fde68a;
+  padding:10px 12px;
+  border-radius:10px;
+}
+
+/* ===== 響應式 ===== */
+@media (max-width: 900px){
+  body{
+    padding:16px;
+  }
+
+  .toolbar{
+    flex-direction:column;
+    align-items:stretch;
+  }
+
+  .toolbar-left,
+  .toolbar-right{
+    width:100%;
+    align-items:stretch;
+  }
+
+  .month-tags{
+    justify-content:flex-start;
+  }
+
+  .detail-grid{
+    grid-template-columns:1fr 1fr;
+  }
+}
 </style>
 </head>
 
 <body>
-
 <div class="container">
 
 <header>
-<h1>SmartRoster Admin</h1>
-<p>智慧班表簽核系統｜後台管理</p>
+  <h1>SmartRoster Admin</h1>
+  <p>智慧班表簽核系統｜後台管理</p>
 </header>
 
-<!-- Dashboard -->
 <div class="card">
-<h3>📊 系統統計</h3>
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <input id="searchInput" type="text" placeholder="搜尋任務ID、建立者、單位、月份..." />
+      <select id="statusFilter">
+        <option value="all">全部狀態</option>
+        <option value="pending">未開始</option>
+        <option value="progress">進行中</option>
+        <option value="done">已完成</option>
+      </select>
+      <button class="secondary" onclick="refreshTasks()">重新整理</button>
+    </div>
 
-<div class="dashboard">
+    <div class="toolbar-right">
+      <div id="monthTags" class="month-tags"></div>
+    </div>
+  </div>
 
-<div class="stat">
-<h3 id="taskCount">0</h3>
-<p>總任務數</p>
+  <div class="info-bar">
+    <div class="info-chip">任務總數：<strong id="taskCount">0</strong></div>
+    <div class="info-chip">目前篩選後：<strong id="filteredCount">0</strong></div>
+    <div class="info-chip">已勾選：<strong id="selectedCount">0</strong></div>
+    <div class="info-chip">顯示月份：<strong id="rangeText">最近 3 個月份</strong></div>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+    <button class="accent" onclick="downloadSelectedReports()">📥 批次下載簽核紀錄</button>
+    <button class="secondary" onclick="viewSelectedReports()">👁 批次查看簽核狀態</button>
+    <button class="danger" onclick="deleteSelectedTasks()">🗑 批次刪除任務</button>
+  </div>
+
+  <div class="small-note">
+    刪除任務屬高風險操作，建議後端實作為「軟刪除」或保留操作紀錄。批次下載若尚未有 ZIP 匯出 API，系統會以多分頁方式開啟各任務報表。
+  </div>
+
+  <div class="table-wrap" style="margin-top:16px;">
+    <table>
+      <thead>
+        <tr>
+          <th class="check-col">
+            <input type="checkbox" id="checkAll" onclick="toggleAllRows(this)">
+          </th>
+          <th>任務編碼 / 建立時間</th>
+          <th>建立者</th>
+          <th>單位</th>
+          <th>簽核月份</th>
+          <th>狀態</th>
+          <th>完成度</th>
+          <th>功能</th>
+        </tr>
+      </thead>
+      <tbody id="taskTableBody">
+        <tr><td colspan="8" class="empty">載入中...</td></tr>
+      </tbody>
+    </table>
+  </div>
 </div>
 
-<div class="stat">
-<h3 id="signerCount">0</h3>
-<p>總簽核人</p>
 </div>
 
-<div class="stat">
-<h3 id="avgProgress">0%</h3>
-<p>平均完成率</p>
-</div>
+<!-- ===== 任務明細 Modal ===== -->
+<div class="modal" id="detailModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div>
+        <h3 style="margin:0;">📋 任務簽核內容</h3>
+        <div id="detailTitle" class="muted" style="margin-top:4px;font-size:13px;"></div>
+      </div>
+      <button class="close-btn" onclick="closeDetailModal()">關閉</button>
+    </div>
 
-<div class="stat">
-<h3 id="activeTasks">0</h3>
-<p>進行中任務</p>
-</div>
-
-</div>
-</div>
-
-
-<!-- 任務列表 -->
-<div class="card">
-
-<div style="display:flex;justify-content:space-between;margin-bottom:16px">
-<h3>📋 任務管理</h3>
-
-<input id="search" class="search" placeholder="搜尋任務 / 單位 / 建立者">
-</div>
-
-<table>
-
-<thead>
-<tr>
-<th>任務ID</th>
-<th>建立者</th>
-<th>單位</th>
-<th>月份</th>
-<th>進度</th>
-<th>功能</th>
-</tr>
-</thead>
-
-<tbody id="taskBody">
-<tr>
-<td colspan="6" style="text-align:center">載入中...</td>
-</tr>
-</tbody>
-
-</table>
-
-</div>
-
+    <div class="modal-body">
+      <div id="detailSummary"></div>
+      <div class="table-wrap" style="margin-top:16px;">
+        <table>
+          <thead>
+            <tr>
+              <th>員工編號</th>
+              <th>姓名</th>
+              <th>來源</th>
+              <th>簽核狀態</th>
+              <th>簽核時間</th>
+            </tr>
+          </thead>
+          <tbody id="detailBody">
+            <tr><td colspan="5" class="empty">載入中...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
+/* =========================
+   API 設定
+========================= */
+const API_LIST = "https://chihwei-n8n.zeabur.app/webhook/roster-list";
+const API_REPORT = "https://chihwei-n8n.zeabur.app/webhook/roster-report";
+const API_DELETE = "https://chihwei-n8n.zeabur.app/webhook/roster-delete";       // 需後端配合
+const API_DETAIL = "https://chihwei-n8n.zeabur.app/webhook/roster-task-detail";   // 需後端配合
+const API_BATCH_EXPORT = "https://chihwei-n8n.zeabur.app/webhook/roster-batch-export"; // 可選，若無則 fallback 多分頁
 
-let allTasks=[]
+/* =========================
+   全域狀態
+========================= */
+let allTasks = [];
+let monthFilter = "all";
+let recentMonths = [];
+let currentKeyword = "";
+let currentStatus = "all";
 
-document.addEventListener("DOMContentLoaded",()=>{
-fetchTasks()
+/* =========================
+   初始化
+========================= */
+window.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("searchInput").addEventListener("input", (e) => {
+    currentKeyword = e.target.value.trim().toLowerCase();
+    renderTasks();
+  });
 
-document.getElementById("search")
-.addEventListener("input",(e)=>{
-renderTasks(e.target.value)
-})
+  document.getElementById("statusFilter").addEventListener("change", (e) => {
+    currentStatus = e.target.value;
+    renderTasks();
+  });
 
-})
+  refreshTasks();
+});
 
-async function fetchTasks(){
+/* =========================
+   資料載入
+========================= */
+async function refreshTasks(){
+  const tbody = document.getElementById("taskTableBody");
+  tbody.innerHTML = '<tr><td colspan="8" class="empty">載入中...</td></tr>';
 
-const res=await fetch(
-"https://chihwei-n8n.zeabur.app/webhook/roster-list"
-)
+  try{
+    const res = await fetch(API_LIST);
+    const data = await res.json();
+    allTasks = Array.isArray(data) ? data : [];
 
-allTasks=await res.json()
+    const months = [...new Set(
+      allTasks
+        .map(t => t.month)
+        .filter(Boolean)
+    )].sort().reverse();
 
-renderDashboard()
-renderTasks()
-
+    recentMonths = months.slice(0, 3);
+    renderMonthTags();
+    renderTasks();
+  }catch(err){
+    console.error("載入任務失敗", err);
+    tbody.innerHTML = '<tr><td colspan="8" class="empty">無法載入資料</td></tr>';
+  }
 }
 
-function renderDashboard(){
+/* =========================
+   月份標籤
+========================= */
+function renderMonthTags(){
+  const box = document.getElementById("monthTags");
+  box.innerHTML = "";
 
-let totalTasks=allTasks.length
+  const allTag = document.createElement("div");
+  allTag.className = "month-tag" + (monthFilter === "all" ? " active" : "");
+  allTag.textContent = "全部";
+  allTag.onclick = () => {
+    monthFilter = "all";
+    renderMonthTags();
+    renderTasks();
+  };
+  box.appendChild(allTag);
 
-let totalSigners=0
-let totalProgress=0
-let active=0
-
-allTasks.forEach(t=>{
-totalSigners+=t.signer_count||0
-totalProgress+=t.progress||0
-if((t.progress||0)<100) active++
-})
-
-document.getElementById("taskCount").innerText=totalTasks
-document.getElementById("signerCount").innerText=totalSigners
-
-document.getElementById("avgProgress").innerText=
-Math.round(totalProgress/totalTasks||0)+"%"
-
-document.getElementById("activeTasks").innerText=active
-
+  recentMonths.forEach(m => {
+    const count = allTasks.filter(t => t.month === m).length;
+    const tag = document.createElement("div");
+    tag.className = "month-tag" + (monthFilter === m ? " active" : "");
+    tag.textContent = `${m} (${count})`;
+    tag.onclick = () => {
+      monthFilter = m;
+      renderMonthTags();
+      renderTasks();
+    };
+    box.appendChild(tag);
+  });
 }
 
-function renderTasks(keyword=""){
+/* =========================
+   狀態判斷
+========================= */
+function getTaskStatus(task){
+  const p = Number(task.progress || 0);
 
-keyword=keyword.toLowerCase()
+  if (p >= 100) {
+    return { key: "done", text: "已完成", className: "status-done" };
+  }
 
-let filtered=allTasks.filter(t=>
+  if (p > 0 && p < 100) {
+    return { key: "progress", text: "進行中", className: "status-progress" };
+  }
 
-(t.task_id||"").toLowerCase().includes(keyword)||
-(t.creator||"").toLowerCase().includes(keyword)||
-(t.unit||"").toLowerCase().includes(keyword)||
-(t.month||"").toLowerCase().includes(keyword)
-
-)
-
-const tbody=document.getElementById("taskBody")
-tbody.innerHTML=""
-
-filtered.forEach(t=>{
-
-const tr=document.createElement("tr")
-
-const progress=t.progress||0
-
-tr.innerHTML=`
-
-<td>${t.task_id}</td>
-
-<td>${t.creator}</td>
-
-<td>${t.unit}</td>
-
-<td>${t.month}</td>
-
-<td>
-<div class="progress">
-<div class="bar" style="width:${progress}%"></div>
-</div>
-${progress}%
-</td>
-
-<td>
-
-<div class="actions">
-
-<button onclick="copyLink('${t.task_id}')">
-複製連結
-</button>
-
-<button onclick="openReport('${t.task_id}')">
-報表
-</button>
-
-</div>
-
-</td>
-
-`
-
-tbody.appendChild(tr)
-
-})
-
+  return { key: "pending", text: "未開始", className: "status-pending" };
 }
 
+/* =========================
+   篩選後資料
+========================= */
+function getFilteredTasks(){
+  let filtered = allTasks.filter(task => {
+    if (monthFilter !== "all") {
+      return task.month === monthFilter;
+    }
+    return recentMonths.includes(task.month);
+  });
+
+  if (currentKeyword) {
+    filtered = filtered.filter(task => {
+      return (
+        String(task.task_id || "").toLowerCase().includes(currentKeyword) ||
+        String(task.creator || "").toLowerCase().includes(currentKeyword) ||
+        String(task.unit || "").toLowerCase().includes(currentKeyword) ||
+        String(task.month || "").toLowerCase().includes(currentKeyword)
+      );
+    });
+  }
+
+  if (currentStatus !== "all") {
+    filtered = filtered.filter(task => getTaskStatus(task).key === currentStatus);
+  }
+
+  filtered.sort((a, b) => {
+    const dateA = new Date(a.created_at || 0).getTime();
+    const dateB = new Date(b.created_at || 0).getTime();
+    return dateB - dateA;
+  });
+
+  return filtered;
+}
+
+/* =========================
+   Render 任務表格
+========================= */
+function renderTasks(){
+  const tbody = document.getElementById("taskTableBody");
+  const filtered = getFilteredTasks();
+
+  document.getElementById("taskCount").innerText = allTasks.length;
+  document.getElementById("filteredCount").innerText = filtered.length;
+  document.getElementById("rangeText").innerText = monthFilter === "all"
+    ? `最近 ${recentMonths.length} 個月份`
+    : monthFilter;
+
+  tbody.innerHTML = "";
+  document.getElementById("checkAll").checked = false;
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="empty">目前無符合條件的任務</td></tr>';
+    updateSelectedCount();
+    return;
+  }
+
+  filtered.forEach(task => {
+    const progress = Number(task.progress || 0);
+    const status = getTaskStatus(task);
+
+    const dateObj = new Date(task.created_at);
+    const dateStr = isNaN(dateObj.getTime())
+      ? "-"
+      : dateObj.toLocaleDateString("zh-TW", {
+          timeZone: "Asia/Taipei",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit"
+        });
+
+    const timeStr = isNaN(dateObj.getTime())
+      ? ""
+      : dateObj.toLocaleTimeString("zh-TW", {
+          timeZone: "Asia/Taipei",
+          hour12: false,
+          hour: "2-digit",
+          minute: "2-digit"
+        });
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="check-col">
+        <input type="checkbox" class="row-check" value="${escapeHtml(task.task_id || "")}" onchange="updateSelectedCount()">
+      </td>
+
+      <td>
+        <div class="task-meta-time">📅 ${dateStr} ${timeStr}</div>
+        <div class="task-meta-id">任務編碼：${escapeHtml(task.task_id || "-")}</div>
+      </td>
+
+      <td style="font-weight:500;">${escapeHtml(task.creator || "-")}</td>
+      <td>${escapeHtml(task.unit || "-")}</td>
+      <td>${escapeHtml(task.month || "-")}</td>
+
+      <td>
+        <span class="status-badge ${status.className}">${status.text}</span>
+      </td>
+
+      <td>
+        <div class="progress"><div class="progress-bar" style="width:${progress}%"></div></div>
+        <span style="font-size:12px;">${progress}% (${Number(task.signed_count || 0)}/${Number(task.signer_count || 0)})</span>
+      </td>
+
+      <td>
+        <div class="row-actions">
+          <button class="secondary" onclick="viewTaskDetail('${jsEscape(task.task_id || "")}')">查看內容</button>
+          <button class="secondary" onclick="openReport('${jsEscape(task.task_id || "")}')">報表</button>
+          <button class="secondary" onclick="copyLink('${jsEscape(task.task_id || "")}')">複製連結</button>
+          <button class="danger" onclick="deleteTask('${jsEscape(task.task_id || "")}')">刪除</button>
+        </div>
+      </td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+
+  updateSelectedCount();
+}
+
+/* =========================
+   勾選控制
+========================= */
+function toggleAllRows(source){
+  document.querySelectorAll(".row-check").forEach(el => {
+    el.checked = source.checked;
+  });
+  updateSelectedCount();
+}
+
+function getSelectedTaskIds(){
+  return [...document.querySelectorAll(".row-check:checked")].map(el => el.value);
+}
+
+function updateSelectedCount(){
+  const count = getSelectedTaskIds().length;
+  document.getElementById("selectedCount").innerText = count;
+}
+
+/* =========================
+   單一操作
+========================= */
 function copyLink(taskId){
-
-const url=
-location.origin+"/confirm.html?id="+taskId
-
-navigator.clipboard.writeText(url)
-
-alert("已複製簽核連結")
-
+  const signUrl = `${window.location.origin}/confirm.html?id=${taskId}`;
+  navigator.clipboard.writeText(signUrl).then(() => {
+    alert(`任務 ${taskId} 連結已複製到剪貼簿`);
+  }).catch(() => {
+    alert("複製失敗，請稍後再試");
+  });
 }
 
 function openReport(taskId){
-
-const url=
-"https://chihwei-n8n.zeabur.app/webhook/roster-report?task_id="+taskId
-
-window.open(url)
-
+  const url = `${API_REPORT}?task_id=${encodeURIComponent(taskId)}`;
+  window.open(url, "_blank");
 }
 
-</script>
+/* =========================
+   批次查看 / 下載
+========================= */
+function viewSelectedReports(){
+  const ids = getSelectedTaskIds();
+  if (!ids.length) {
+    alert("請先勾選任務");
+    return;
+  }
 
+  ids.forEach(id => {
+    const url = `${API_REPORT}?task_id=${encodeURIComponent(id)}`;
+    window.open(url, "_blank");
+  });
+}
+
+async function downloadSelectedReports(){
+  const ids = getSelectedTaskIds();
+  if (!ids.length) {
+    alert("請先勾選任務");
+    return;
+  }
+
+  /* 若未來有 ZIP 匯出 API，可優先使用 */
+  try{
+    const res = await fetch(API_BATCH_EXPORT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ task_ids: ids })
+    });
+
+    if (res.ok) {
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "smartroster_reports.zip";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      return;
+    }
+  }catch(err){
+    console.warn("批次 ZIP 匯出 API 不可用，改用多分頁下載", err);
+  }
+
+  /* fallback：逐筆開啟 */
+  ids.forEach(id => {
+    const url = `${API_REPORT}?task_id=${encodeURIComponent(id)}`;
+    window.open(url, "_blank");
+  });
+
+  alert("目前批次匯出 ZIP API 尚未啟用，已改為逐筆開啟各任務報表。");
+}
+
+/* =========================
+   任務明細
+========================= */
+async function viewTaskDetail(taskId){
+  document.getElementById("detailModal").style.display = "flex";
+  document.getElementById("detailTitle").innerText = `任務 ID：${taskId}`;
+  document.getElementById("detailSummary").innerHTML = "";
+  document.getElementById("detailBody").innerHTML = '<tr><td colspan="5" class="empty">載入中...</td></tr>';
+
+  const task = allTasks.find(t => String(t.task_id) === String(taskId));
+  if (task) {
+    const status = getTaskStatus(task);
+    document.getElementById("detailSummary").innerHTML = `
+      <div class="detail-grid">
+        <div class="detail-card">
+          <div class="label">建立者</div>
+          <div class="value">${escapeHtml(task.creator || "-")}</div>
+        </div>
+        <div class="detail-card">
+          <div class="label">單位</div>
+          <div class="value">${escapeHtml(task.unit || "-")}</div>
+        </div>
+        <div class="detail-card">
+          <div class="label">簽核月份</div>
+          <div class="value">${escapeHtml(task.month || "-")}</div>
+        </div>
+        <div class="detail-card">
+          <div class="label">任務狀態</div>
+          <div class="value"><span class="status-badge ${status.className}">${status.text}</span></div>
+        </div>
+      </div>
+    `;
+  }
+
+  try{
+    const res = await fetch(`${API_DETAIL}?task_id=${encodeURIComponent(taskId)}`);
+    const data = await res.json();
+
+    const signers = Array.isArray(data.signers) ? data.signers : [];
+    const tbody = document.getElementById("detailBody");
+    tbody.innerHTML = "";
+
+    if (!signers.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="empty">此任務尚無簽核明細，或後端尚未提供 roster-task-detail API</td></tr>';
+      return;
+    }
+
+    signers.forEach(s => {
+      const signed = String(s.signed || s.status || "").toLowerCase();
+      const signedText =
+        signed === "signed" || signed === "done" || signed === "completed"
+          ? "已簽"
+          : "未簽";
+
+      const signedTime = s.signed_at || s.updated_at || "-";
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${escapeHtml(s.staff_id || s.staffId || "-")}</td>
+        <td>${escapeHtml(s.name || "-")}</td>
+        <td>${escapeHtml(s.source || "-")}</td>
+        <td>${escapeHtml(signedText)}</td>
+        <td>${escapeHtml(signedTime)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+  }catch(err){
+    console.error("讀取任務明細失敗", err);
+    document.getElementById("detailBody").innerHTML =
+      `<tr><td colspan="5" class="empty">無法讀取任務簽核內容。若你還沒做 roster-task-detail webhook，這裡會先顯示失敗。</td></tr>`;
+  }
+}
+
+function closeDetailModal(){
+  document.getElementById("detailModal").style.display = "none";
+}
+
+/* =========================
+   刪除任務
+========================= */
+async function deleteTask(taskId){
+  const confirmText = `確定刪除任務 ${taskId}？\n\n此操作屬高風險，且可能無法復原。`;
+  if (!confirm(confirmText)) return;
+
+  try{
+    const res = await fetch(API_DELETE, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ task_id: taskId })
+    });
+
+    const text = await res.text();
+    let data = {};
+    try { data = JSON.parse(text); } catch(e) {}
+
+    if (!res.ok) {
+      throw new Error(data.message || "刪除失敗");
+    }
+
+    alert(`任務 ${taskId} 已刪除`);
+    refreshTasks();
+  }catch(err){
+    console.error(err);
+    alert(`刪除失敗：${err.message || "請檢查 roster-delete webhook"}`);
+  }
+}
+
+async function deleteSelectedTasks(){
+  const ids = getSelectedTaskIds();
+  if (!ids.length) {
+    alert("請先勾選任務");
+    return;
+  }
+
+  const ok = confirm(
+    `確定刪除已勾選的 ${ids.length} 筆任務？\n\n此操作屬高風險，建議後端務必保留刪除紀錄。`
+  );
+  if (!ok) return;
+
+  let success = 0;
+  let fail = 0;
+
+  for (const id of ids) {
+    try{
+      const res = await fetch(API_DELETE, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ task_id: id })
+      });
+
+      if (res.ok) {
+        success++;
+      } else {
+        fail++;
+      }
+    }catch(err){
+      fail++;
+    }
+  }
+
+  alert(`批次刪除完成\n成功：${success} 筆\n失敗：${fail} 筆`);
+  refreshTasks();
+}
+
+/* =========================
+   小工具
+========================= */
+function escapeHtml(str){
+  return String(str)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function jsEscape(str){
+  return String(str).replaceAll("\\", "\\\\").replaceAll("'", "\\'");
+}
+</script>
 </body>
 </html>
