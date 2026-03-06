@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>SmartRoster｜智慧班表簽核系統</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+
+:root{
+  --primary:#374151;
+  --accent:#059669;
+  --bg:#eef2f0;
+  --card:#ffffff;
+  --text:#111827;
+  --muted:#6b7280;
+  --border:#e5e7eb;
+}
+
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC",sans-serif;
+  background:var(--bg);
+  margin:0;
+  padding:30px;
+  color:var(--text);
+}
+
+.container{
+  max-width:1200px;
+  margin:auto;
+}
+
+header{
+  margin-bottom:30px;
+}
+
+header h1{
+  margin:0;
+}
+
+header p{
+  color:var(--muted);
+}
+
+/* 卡片 */
+
+.card{
+  background:var(--card);
+  border-radius:16px;
+  padding:24px;
+  margin-bottom:24px;
+  box-shadow:0 8px 24px rgba(0,0,0,.05);
+}
+
+/* KPI */
+
+.kpi-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:16px;
+}
+
+.kpi{
+  background:#f9fafb;
+  border-radius:12px;
+  padding:20px;
+  text-align:center;
+}
+
+.kpi h2{
+  margin:0;
+  font-size:28px;
+}
+
+.kpi p{
+  margin:4px 0 0 0;
+  color:var(--muted);
+}
+
+/* 進度條 */
+
+.progress{
+  background:#e5e7eb;
+  height:10px;
+  border-radius:999px;
+  overflow:hidden;
+}
+
+.progress-bar{
+  background:var(--accent);
+  height:100%;
+}
+
+/* 任務卡片 */
+
+.task{
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:12px;
+  margin-bottom:10px;
+}
+
+.task-title{
+  font-weight:600;
+}
+
+.task-meta{
+  font-size:13px;
+  color:var(--muted);
+  margin-bottom:6px;
+}
+
+.actions{
+  margin-top:6px;
+}
+
+button{
+  border:none;
+  padding:6px 10px;
+  border-radius:6px;
+  cursor:pointer;
+}
+
+.primary{
+  background:var(--primary);
+  color:white;
+}
+
+.copy{
+  background:#f3f4f6;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<header>
+<h1>SmartRoster</h1>
+<p>智慧班表簽核系統 Dashboard</p>
+</header>
+
+<!-- 系統統計 -->
+
+<div class="card">
+
+<h3>📊 系統概況</h3>
+
+<div class="kpi-grid">
+
+<div class="kpi">
+<h2 id="kpiActive">0</h2>
+<p>進行中任務</p>
+</div>
+
+<div class="kpi">
+<h2 id="kpiMonth">0</h2>
+<p>本月任務</p>
+</div>
+
+<div class="kpi">
+<h2 id="kpiTotal">0</h2>
+<p>任務總數</p>
+</div>
+
+<div class="kpi">
+<h2 id="kpiSigned">0</h2>
+<p>已簽核人數</p>
+</div>
+
+</div>
+
+</div>
+
+
+<!-- 進行中任務 -->
+
+<div class="card">
+
+<h3>📌 進行中任務</h3>
+
+<div id="activeTasks">
+
+載入中...
+
+</div>
+
+</div>
+
+
+<!-- 最近任務 -->
+
+<div class="card">
+
+<h3>📄 最近建立任務</h3>
+
+<div id="recentTasks">
+
+載入中...
+
+</div>
+
+</div>
+
+</div>
+
+
+<script>
+
+let allTasks=[]
+
+async function fetchTasks(){
+
+try{
+
+const res = await fetch("https://chihwei-n8n.zeabur.app/webhook/roster-list")
+
+allTasks = await res.json()
+
+renderDashboard()
+
+}catch(e){
+
+console.error(e)
+
+}
+
+}
+
+
+
+function renderDashboard(){
+
+/* KPI */
+
+const active = allTasks.filter(t=>t.progress<100)
+
+const now = new Date()
+const month = now.toISOString().slice(0,7)
+
+const monthTasks = allTasks.filter(t=>t.month===month)
+
+const signed = allTasks.reduce((sum,t)=>sum+(t.signed_count||0),0)
+
+document.getElementById("kpiActive").innerText=active.length
+document.getElementById("kpiMonth").innerText=monthTasks.length
+document.getElementById("kpiTotal").innerText=allTasks.length
+document.getElementById("kpiSigned").innerText=signed
+
+
+/* 進行中任務 */
+
+const activeBox=document.getElementById("activeTasks")
+
+activeBox.innerHTML=""
+
+if(active.length===0){
+
+activeBox.innerHTML="目前沒有進行中任務"
+
+}else{
+
+active.forEach(task=>{
+
+const div=document.createElement("div")
+
+const progress=task.progress||0
+
+div.className="task"
+
+div.innerHTML=`
+
+<div class="task-title">${task.unit} ${task.month}</div>
+
+<div class="task-meta">
+任務編碼：${task.task_id}
+</div>
+
+<div class="progress">
+<div class="progress-bar" style="width:${progress}%"></div>
+</div>
+
+<div class="task-meta">
+${progress}% (${task.signed_count}/${task.signer_count})
+</div>
+
+<div class="actions">
+
+<button class="copy" onclick="copyLink('${task.task_id}')">
+🔗 複製連結
+</button>
+
+<button class="primary" onclick="openStatus('${task.task_id}')">
+簽核狀態
+</button>
+
+</div>
+
+`
+
+activeBox.appendChild(div)
+
+})
+
+}
+
+
+/* 最近任務 */
+
+const recentBox=document.getElementById("recentTasks")
+
+recentBox.innerHTML=""
+
+const sorted=[...allTasks].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))
+
+const recent=sorted.slice(0,5)
+
+recent.forEach(task=>{
+
+const div=document.createElement("div")
+
+div.className="task"
+
+div.innerHTML=`
+
+<div class="task-title">${task.unit} ${task.month}</div>
+
+<div class="task-meta">
+任務編碼：${task.task_id}
+</div>
+
+`
+
+recentBox.appendChild(div)
+
+})
+
+}
+
+
+/* 複製連結 */
+
+function copyLink(taskId){
+
+const url = window.location.origin+"/confirm.html?id="+taskId
+
+navigator.clipboard.writeText(url)
+
+alert("連結已複製")
+
+}
+
+
+/* 開啟簽核狀態 */
+
+function openStatus(taskId){
+
+window.open(
+"https://chihwei-n8n.zeabur.app/webhook/roster-report?task_id="+taskId,
+"_blank"
+)
+
+}
+
+
+fetchTasks()
+
+</script>
+
+</body>
+</html>
