@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>SmartRoster Admin</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<style>
+
+:root{
+  --primary:#374151;
+  --accent:#059669;
+  --bg:#f3f4f6;
+  --card:#ffffff;
+  --border:#e5e7eb;
+}
+
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC",sans-serif;
+  background:var(--bg);
+  margin:0;
+  padding:30px;
+}
+
+.container{
+  max-width:1300px;
+  margin:auto;
+}
+
+header{
+  margin-bottom:30px;
+}
+
+header h1{
+  margin:0;
+  font-size:28px;
+}
+
+header p{
+  color:#6b7280;
+}
+
+.card{
+  background:var(--card);
+  border-radius:14px;
+  padding:24px;
+  margin-bottom:24px;
+  box-shadow:0 6px 18px rgba(0,0,0,.05);
+}
+
+.dashboard{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:20px;
+}
+
+.stat{
+  background:#fafafa;
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:16px;
+}
+
+.stat h3{
+  margin:0;
+  font-size:22px;
+}
+
+.stat p{
+  margin:4px 0 0 0;
+  color:#6b7280;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+
+th,td{
+  padding:12px;
+  border-bottom:1px solid var(--border);
+  font-size:14px;
+}
+
+th{
+  text-align:left;
+  color:#6b7280;
+}
+
+.progress{
+  background:#e5e7eb;
+  height:10px;
+  border-radius:999px;
+  overflow:hidden;
+  width:120px;
+}
+
+.bar{
+  background:var(--accent);
+  height:100%;
+}
+
+button{
+  border:none;
+  background:var(--primary);
+  color:white;
+  padding:6px 10px;
+  border-radius:6px;
+  cursor:pointer;
+  font-size:12px;
+}
+
+.search{
+  padding:8px 12px;
+  border-radius:8px;
+  border:1px solid var(--border);
+  width:260px;
+}
+
+.actions{
+  display:flex;
+  gap:6px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<header>
+<h1>SmartRoster Admin</h1>
+<p>智慧班表簽核系統｜後台管理</p>
+</header>
+
+<!-- Dashboard -->
+<div class="card">
+<h3>📊 系統統計</h3>
+
+<div class="dashboard">
+
+<div class="stat">
+<h3 id="taskCount">0</h3>
+<p>總任務數</p>
+</div>
+
+<div class="stat">
+<h3 id="signerCount">0</h3>
+<p>總簽核人</p>
+</div>
+
+<div class="stat">
+<h3 id="avgProgress">0%</h3>
+<p>平均完成率</p>
+</div>
+
+<div class="stat">
+<h3 id="activeTasks">0</h3>
+<p>進行中任務</p>
+</div>
+
+</div>
+</div>
+
+
+<!-- 任務列表 -->
+<div class="card">
+
+<div style="display:flex;justify-content:space-between;margin-bottom:16px">
+<h3>📋 任務管理</h3>
+
+<input id="search" class="search" placeholder="搜尋任務 / 單位 / 建立者">
+</div>
+
+<table>
+
+<thead>
+<tr>
+<th>任務ID</th>
+<th>建立者</th>
+<th>單位</th>
+<th>月份</th>
+<th>進度</th>
+<th>功能</th>
+</tr>
+</thead>
+
+<tbody id="taskBody">
+<tr>
+<td colspan="6" style="text-align:center">載入中...</td>
+</tr>
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+<script>
+
+let allTasks=[]
+
+document.addEventListener("DOMContentLoaded",()=>{
+fetchTasks()
+
+document.getElementById("search")
+.addEventListener("input",(e)=>{
+renderTasks(e.target.value)
+})
+
+})
+
+async function fetchTasks(){
+
+const res=await fetch(
+"https://chihwei-n8n.zeabur.app/webhook/roster-list"
+)
+
+allTasks=await res.json()
+
+renderDashboard()
+renderTasks()
+
+}
+
+function renderDashboard(){
+
+let totalTasks=allTasks.length
+
+let totalSigners=0
+let totalProgress=0
+let active=0
+
+allTasks.forEach(t=>{
+totalSigners+=t.signer_count||0
+totalProgress+=t.progress||0
+if((t.progress||0)<100) active++
+})
+
+document.getElementById("taskCount").innerText=totalTasks
+document.getElementById("signerCount").innerText=totalSigners
+
+document.getElementById("avgProgress").innerText=
+Math.round(totalProgress/totalTasks||0)+"%"
+
+document.getElementById("activeTasks").innerText=active
+
+}
+
+function renderTasks(keyword=""){
+
+keyword=keyword.toLowerCase()
+
+let filtered=allTasks.filter(t=>
+
+(t.task_id||"").toLowerCase().includes(keyword)||
+(t.creator||"").toLowerCase().includes(keyword)||
+(t.unit||"").toLowerCase().includes(keyword)||
+(t.month||"").toLowerCase().includes(keyword)
+
+)
+
+const tbody=document.getElementById("taskBody")
+tbody.innerHTML=""
+
+filtered.forEach(t=>{
+
+const tr=document.createElement("tr")
+
+const progress=t.progress||0
+
+tr.innerHTML=`
+
+<td>${t.task_id}</td>
+
+<td>${t.creator}</td>
+
+<td>${t.unit}</td>
+
+<td>${t.month}</td>
+
+<td>
+<div class="progress">
+<div class="bar" style="width:${progress}%"></div>
+</div>
+${progress}%
+</td>
+
+<td>
+
+<div class="actions">
+
+<button onclick="copyLink('${t.task_id}')">
+複製連結
+</button>
+
+<button onclick="openReport('${t.task_id}')">
+報表
+</button>
+
+</div>
+
+</td>
+
+`
+
+tbody.appendChild(tr)
+
+})
+
+}
+
+function copyLink(taskId){
+
+const url=
+location.origin+"/confirm.html?id="+taskId
+
+navigator.clipboard.writeText(url)
+
+alert("已複製簽核連結")
+
+}
+
+function openReport(taskId){
+
+const url=
+"https://chihwei-n8n.zeabur.app/webhook/roster-report?task_id="+taskId
+
+window.open(url)
+
+}
+
+</script>
+
+</body>
+</html>
