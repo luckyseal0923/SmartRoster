@@ -150,7 +150,7 @@ th{color:var(--muted);font-weight:600;}
   padding:28px;
   width:440px;
   max-height:85vh;        /* ✅ 新增 */
-  overflow:hidden;        /* ✅ 新增 */
+  overflow:auto;        /* ✅ 新增 */
 }
 
 .status-ok{color:var(--ok);}
@@ -452,7 +452,7 @@ function renderSignerList(){
   let html = `
     <h4>📋 已辨識簽核人（${total} 人）</h4>
 
-<div style="max-height:420px;overflow:auto;border:1px solid #e5e7eb;border-radius:8px;">      <table style="width:100%;font-size:14px;">
+<div style="max-height:250px;overflow:auto;border:1px solid #e5e7eb;border-radius:8px;">      <table style="width:100%;font-size:14px;">
         <tr>
           <th style="padding:6px;">員工編號</th>
           <th style="padding:6px;">姓名</th>
