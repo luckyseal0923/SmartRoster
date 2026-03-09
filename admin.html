@@ -298,6 +298,7 @@ const API_LIST = "https://chihwei-n8n.zeabur.app/webhook/roster-list";
 const API_REPORT = "https://chihwei-n8n.zeabur.app/webhook/roster-report";
 const API_DETAIL = "https://chihwei-n8n.zeabur.app/webhook/roster-task-detail";
 const API_EXPORT = "https://chihwei-n8n.zeabur.app/webhook/roster-export";
+const API_DELETE = "https://chihwei-n8n.zeabur.app/webhook/roster-delete";
 
 let allTasks = [];
 let monthFilter = "all";
@@ -312,7 +313,6 @@ function updateUI() {
   const ids = getSelectedTaskIds();
   const count = ids.length;
 
-  // 更新下載按鈕文字
   const btnReport = document.getElementById("mainDownloadBtn");
   const btnRoster = document.getElementById("rosterDownloadBtn");
   
@@ -327,7 +327,7 @@ function updateUI() {
     btnRoster.innerText = `📥 批次下載當月班表 (${count} 筆)`;
   }
 
-  // 計算看板數據 (固定顯示總體數據)
+  // 看板計算
   const totalTasks = allTasks.length;
   const totalSigners = allTasks.reduce((acc, t) => acc + Number(t.signer_count || 0), 0);
   const totalSigned = allTasks.reduce((acc, t) => acc + Number(t.signed_count || 0), 0);
@@ -342,18 +342,12 @@ function updateUI() {
 }
 
 /* =========================
-   3. 下載處理
+   3. 下載處理邏輯
 ========================= */
 function handleDownload() {
   const ids = getSelectedTaskIds();
   if (ids.length === 0) return alert("請先勾選任務");
-  
-  if (ids.length === 1) {
-    window.open(`${API_REPORT}?task_id=${encodeURIComponent(ids[0])}`, "_blank");
-  } else {
-    // 批次下載處理 (可呼叫原本的 downloadSelectedReports 邏輯)
-    ids.forEach(id => window.open(`${API_REPORT}?task_id=${encodeURIComponent(id)}`, "_blank"));
-  }
+  ids.forEach(id => window.open(`${API_REPORT}?task_id=${encodeURIComponent(id)}`, "_blank"));
 }
 
 function handleRosterDownload() {
@@ -363,12 +357,60 @@ function handleRosterDownload() {
 }
 
 /* =========================
-   4. 表格渲染與過濾 (修正後的版本)
+   4. 資料載入與過濾
+========================= */
+async function refreshTasks(){
+  const tbody = document.getElementById("taskTableBody");
+  tbody.innerHTML = '<tr><td colspan="8" class="empty">載入中...</td></tr>';
+  try{
+    const res = await fetch(API_LIST);
+    const data = await res.json();
+    allTasks = Array.isArray(data) ? data : [];
+    
+    // 取得最近月份
+    const months = [...new Set(allTasks.map(t => t.month).filter(Boolean))].sort().reverse();
+    recentMonths = months.slice(0, 3);
+    
+    renderMonthTags();
+    renderTasks();
+  }catch(e){ 
+    console.error(e);
+    tbody.innerHTML = '<tr><td colspan="8" class="empty">連線失敗，請檢查 API 網址</td></tr>'; 
+  }
+}
+
+function getFilteredTasks(){
+  let filtered = allTasks.filter(task => {
+    if (monthFilter !== "all") return task.month === monthFilter;
+    return recentMonths.includes(task.month) || recentMonths.length === 0;
+  });
+
+  if (currentKeyword) {
+    filtered = filtered.filter(task => 
+      String(task.task_id || "").toLowerCase().includes(currentKeyword) ||
+      String(task.creator || "").toLowerCase().includes(currentKeyword) ||
+      String(task.unit || "").toLowerCase().includes(currentKeyword)
+    );
+  }
+
+  if (currentStatus !== "all") {
+    filtered = filtered.filter(task => {
+      const p = Number(task.progress || 0);
+      if (currentStatus === "done") return p >= 100;
+      if (currentStatus === "progress") return p > 0 && p < 100;
+      if (currentStatus === "pending") return p === 0;
+      return true;
+    });
+  }
+  return filtered.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+}
+
+/* =========================
+   5. 介面渲染 (核心)
 ========================= */
 function renderTasks() {
   const tbody = document.getElementById("taskTableBody");
   const filtered = getFilteredTasks();
-
   tbody.innerHTML = "";
   document.getElementById("checkAll").checked = false;
 
@@ -389,12 +431,12 @@ function renderTasks() {
         <input type="checkbox" class="row-check" value="${task.task_id}" onchange="updateUI()">
       </td>
       <td>
-        <div class="task-meta-time">📅 ${dateObj.toLocaleDateString()}</div>
+        <div class="task-meta-time">📅 ${dateObj.toLocaleDateString('zh-TW')}</div>
         <div style="font-size:12px;color:var(--muted);">ID: ${task.task_id}</div>
       </td>
-      <td style="font-weight:500;">${task.creator || "-"}</td>
-      <td>${task.unit || "-"}</td>
-      <td>${task.month || "-"}</td>
+      <td style="font-weight:500;">${escapeHtml(task.creator || "-")}</td>
+      <td>${escapeHtml(task.unit || "-")}</td>
+      <td>${escapeHtml(task.month || "-")}</td>
       <td><span class="status-badge ${status.className}">${status.text}</span></td>
       <td>
         <div class="progress"><div class="progress-bar" style="width:${progress}%"></div></div>
@@ -410,43 +452,52 @@ function renderTasks() {
     `;
     tbody.appendChild(tr);
   });
-
   updateUI();
 }
 
-// 其餘輔助函式 (getFilteredTasks, toggleAllRows, getSelectedTaskIds...) 保持邏輯即可
+function renderMonthTags(){
+  const box = document.getElementById("monthTags");
+  if(!box) return;
+  box.innerHTML = "";
+  const createTag = (m, label) => {
+    const div = document.createElement("div");
+    div.className = "month-tag" + (monthFilter === m ? " active" : "");
+    div.textContent = label;
+    div.onclick = () => { monthFilter = m; renderMonthTags(); renderTasks(); };
+    box.appendChild(div);
+  };
+  createTag("all", "全部");
+  recentMonths.forEach(m => createTag(m, m));
+}
+
+/* =========================
+   6. 輔助功能
+========================= */
 function getSelectedTaskIds(){ return [...document.querySelectorAll(".row-check:checked")].map(el => el.value); }
 function toggleAllRows(source){ document.querySelectorAll(".row-check").forEach(el => el.checked = source.checked); updateUI(); }
-function getTaskStatus(task){ 
+function getTaskStatus(task){
   const p = Number(task.progress || 0);
   if (p >= 100) return { text: "已完成", className: "status-done" };
   if (p > 0) return { text: "進行中", className: "status-progress" };
   return { text: "未開始", className: "status-pending" };
 }
-
-// 初始化與 API 載入 (略，保持原本 refreshTasks 邏輯)
-async function refreshTasks(){
-  const tbody = document.getElementById("taskTableBody");
-  tbody.innerHTML = '<tr><td colspan="8" class="empty">載入中...</td></tr>';
-  try{
-    const res = await fetch(API_LIST);
-    const data = await res.json();
-    allTasks = Array.isArray(data) ? data : [];
-    renderMonthTags();
-    renderTasks();
-  }catch(e){ tbody.innerHTML = '<tr><td colspan="8" class="empty">連線失敗</td></tr>'; }
+function copyLink(taskId){
+  const url = `${window.location.origin}/confirm.html?id=${taskId}`;
+  navigator.clipboard.writeText(url).then(() => alert("連結已複製"));
 }
-
-function renderMonthTags(){ /* 原本的邏輯... */ }
-function getFilteredTasks(){ /* 原本的過濾邏輯... */ }
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m])); }
 function jsEscape(s){ return String(s).replace(/'/g, "\\'"); }
 
+// 初始化
 window.addEventListener("DOMContentLoaded", () => {
   document.getElementById("searchInput").addEventListener("input", e => { currentKeyword = e.target.value.toLowerCase(); renderTasks(); });
   document.getElementById("statusFilter").addEventListener("change", e => { currentStatus = e.target.value; renderTasks(); });
   refreshTasks();
 });
+
+// 彈窗與刪除邏輯 (略，可保留原本 code)
+function closeDetailModal(){ document.getElementById("detailModal").style.display="none"; }
+async function deleteTask(id){ if(confirm("確定刪除？")){ /* ... API 呼叫 ... */ } }
 </script>
 </body>
 </html>
