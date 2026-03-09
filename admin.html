@@ -483,9 +483,25 @@ tr:hover td{
       <button class="secondary" onclick="refreshTasks()">重新整理</button>
     </div>
 
-    <div class="toolbar-right">
-      <div id="monthTags" class="month-tags"></div>
-    </div>
+<div class="month-tags">
+
+  <div id="allMonthTag"
+       class="month-tag active"
+       onclick="setMonthFilter('all')">
+    全部
+  </div>
+
+  <!-- 最近月份 -->
+  <div id="recentMonths" style="display:flex;gap:6px;"></div>
+
+  <!-- 更多月份 -->
+  <select id="monthDropdown"
+          onchange="setMonthFilter(this.value)"
+          style="padding:5px 10px;border-radius:999px;border:1px solid #d1d5db;">
+    <option value="">更多月份</option>
+  </select>
+
+</div>
   </div>
 
 <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
@@ -695,33 +711,55 @@ async function refreshTasks(){
    月份標籤
 ========================= */
 function renderMonthTags(){
-  const box = document.getElementById("monthTags");
-  box.innerHTML = "";
 
-  const allTag = document.createElement("div");
-  allTag.className = "month-tag" + (monthFilter === "all" ? " active" : "");
-  allTag.textContent = "全部";
-  allTag.onclick = () => {
-    monthFilter = "all";
-    renderMonthTags();
-    renderTasks();
-  };
-  box.appendChild(allTag);
+  const recentBox = document.getElementById("recentMonths");
+  const dropdown = document.getElementById("monthDropdown");
 
-  recentMonths.forEach(m => {
+  recentBox.innerHTML = "";
+  dropdown.innerHTML = '<option value="">更多月份</option>';
+
+  /* 取得所有月份 */
+  const months = [...new Set(
+    allTasks
+      .map(t => t.month)
+      .filter(Boolean)
+  )].sort().reverse();
+
+  /* 最近三個月 */
+  const recent = months.slice(0,3);
+
+  /* 其他月份 */
+  const old = months.slice(3);
+
+  /* ===== 最近月份 quick tag ===== */
+  recent.forEach(m => {
+
     const count = allTasks.filter(t => t.month === m).length;
+
     const tag = document.createElement("div");
     tag.className = "month-tag" + (monthFilter === m ? " active" : "");
     tag.textContent = `${m} (${count})`;
-    tag.onclick = () => {
-      monthFilter = m;
-      renderMonthTags();
-      renderTasks();
-    };
-    box.appendChild(tag);
-  });
-}
 
+    tag.onclick = () => {
+      setMonthFilter(m);
+    };
+
+    recentBox.appendChild(tag);
+  });
+
+  /* ===== dropdown ===== */
+  old.forEach(m => {
+
+    const count = allTasks.filter(t => t.month === m).length;
+
+    const opt = document.createElement("option");
+    opt.value = m;
+    opt.textContent = `${m} (${count})`;
+
+    dropdown.appendChild(opt);
+  });
+
+}
 /* =========================
    狀態判斷
 ========================= */
@@ -1153,6 +1191,19 @@ function escapeHtml(str){
 
 function jsEscape(str){
   return String(str).replaceAll("\\", "\\\\").replaceAll("'", "\\'");
+}
+  
+  function setMonthFilter(m){
+
+  if(!m){
+    monthFilter = "all";
+  }else{
+    monthFilter = m;
+  }
+
+  renderTasks();
+  renderMonthTags();
+
 }
 </script>
 </body>
