@@ -909,8 +909,8 @@ function renderTasks(){
       <td>
         <div class="row-actions">
           <button class="secondary" onclick="viewTaskDetail('${jsEscape(task.task_id || "")}')">查看內容</button>
-         <button class="secondary" onclick="copySignLink('${jsEscape(task.task_id || "")}')">簽署連結</button>          
-         <button class="danger" onclick="deleteTask('${jsEscape(task.task_id || "")}')">刪除</button>
+          <button class="secondary"onclick="copySignLink('${jsEscape(task.task_id || "")}')">📋 複製簽核連結</button>         
+          <button class="danger" onclick="deleteTask('${jsEscape(task.task_id || "")}')">刪除</button>
         </div>
       </td>
     `;
@@ -975,19 +975,30 @@ function handleDownload() {
 
 // 處理「當月班表」下載
 function handleRosterDownload() {
+
   const ids = getSelectedTaskIds();
+
   if (ids.length === 0) {
     alert("請先勾選要下載班表的任務");
     return;
   }
 
-  // 這裡假設你有另一個 API 或邏輯處理班表下載
-  // 如果目前還沒有專門 API，可以先提示或執行跟報表一樣的邏輯
   ids.forEach(id => {
-    // 範例：開啟班表下載 URL (請根據你的後端調整 API 網址)
-    const url = `https://chihwei-n8n.zeabur.app/webhook/roster-export?task_id=${encodeURIComponent(id)}`;
+
+    const task = allTasks.find(t => t.task_id === id);
+
+    if (!task || !task.pdf_file_id) {
+      alert("找不到班表 PDF");
+      return;
+    }
+
+    const url =
+      `https://drive.google.com/file/d/${task.pdf_file_id}/preview`;
+
     window.open(url, "_blank");
+
   });
+
 }
 
 /* =========================
