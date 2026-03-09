@@ -7,17 +7,20 @@
 
 <style>
 :root{
-  --primary:#374151;
-  --accent:#059669;
-  --bg:#eef2f0;
+  --primary:#1e293b;      /* Admin 主色 */
+  --accent:#2563eb;       /* Admin 主操作色 */
+  --accent-hover:#1d4ed8;
+
+  --bg:#f3f6fb;           /* Admin 背景 */
   --card:#ffffff;
-  --text:#111827;
-  --muted:#6b7280;
-  --border:#e5e7eb;
+
+  --text:#0f172a;
+  --muted:#64748b;
+
+  --border:#e2e8f0;
+
   --ok:#059669;
-  --warn:#b45309;
-  --bad:#b91c1c;
-  --info:#2563eb;
+  --bad:#dc2626;
 }
 
 *{box-sizing:border-box;}
@@ -83,13 +86,11 @@ header{
 }
 
 header h1{
-  margin:0;
-  font-size:30px;
+  color:#1e293b;
 }
 
 header p{
-  margin-top:6px;
-  color:var(--muted);
+  color:#64748b;
 }
 
 .card{
@@ -151,8 +152,11 @@ button.primary{
 }
 
 button.accent{
-  background:var(--accent);
-  color:#fff;
+  background:#2563eb;
+}
+
+button.accent:hover{
+  background:#1d4ed8;
 }
 
 button.secondary{
@@ -228,6 +232,7 @@ button:disabled{
   gap:10px;
 }
 /* ===== table ===== */
+/* ===== table ===== */
 .table-wrap{
   overflow:auto;
   border:1px solid var(--border);
@@ -237,10 +242,12 @@ button:disabled{
 table{
   width:100%;
   border-collapse:collapse;
-  min-width:1100px;
-  background:#fff;
 }
 
+/* ===== table hover ===== */
+.table-wrap table tbody tr:hover{
+  background:#f1f5f9;
+}
 th,td{
   padding:14px 12px;
   border-bottom:1px solid var(--border);
@@ -394,25 +401,25 @@ tr:hover td{
 .detail-grid{
   display:grid;
   grid-template-columns:repeat(4,1fr);
-  gap:12px;
-  margin-bottom:18px;
+  gap:8px;
+  margin-bottom:12px;
 }
 
 .detail-card{
   border:1px solid var(--border);
-  border-radius:12px;
-  padding:12px;
-  background:#fafafa;
+  border-radius:8px;
+  padding:8px 10px;
+  background:#f9fafb;
 }
 
 .detail-card .label{
-  font-size:12px;
-  color:var(--muted);
-  margin-bottom:6px;
+  font-size:11px;
+  color:#6b7280;
+  margin-bottom:2px;
 }
 
 .detail-card .value{
-  font-size:15px;
+  font-size:14px;
   font-weight:600;
 }
 
@@ -1110,12 +1117,12 @@ async function viewTaskDetail(taskId){
 
     signers.forEach(s => {
       const signed = String(s.signed || s.status || "").toLowerCase();
-let signedBadge = "";
+let signedBadge="";
 
-if (signed === "signed" || signed === "done" || signed === "completed") {
-  signedBadge = `<span style="color:#059669;font-weight:600;">已簽</span>`;
-} else {
-  signedBadge = `<span style="color:#dc2626;font-weight:600;">未簽</span>`;
+if(signed==="signed"||signed==="done"||signed==="completed"){
+  signedBadge=`<span style="color:#059669;font-weight:600;">已簽</span>`;
+}else{
+  signedBadge=`<span style="color:#dc2626;font-weight:600;">未簽</span>`;
 }
 
 let formattedTime = "-";
