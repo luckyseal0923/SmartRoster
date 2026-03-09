@@ -6,6 +6,45 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
 <style>
+/* 讓 Header 變成彈性佈局 */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+}
+
+/* 後台按鈕樣式 */
+.admin-btn {
+  background: #ffffff;
+  color: var(--primary);
+  border: 1px solid var(--border);
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.admin-btn:hover {
+  background: #f9fafb;
+  border-color: var(--primary);
+  transform: translateY(-1px);
+}
+
+/* 手機版適應：如果螢幕太窄，按鈕移到下方或保持比例 */
+@media (max-width: 600px) {
+  header {
+    flex-direction: row;
+    align-items: center;
+  }
+  header h1 { font-size: 24px; }
+  .admin-btn { padding: 6px 10px; font-size: 13px; }
+} 
 :root{
   --primary:#374151;      /* 石墨灰 */
   --accent:#059669;       /* 醫療綠 */
@@ -189,8 +228,14 @@ th{color:var(--muted);font-weight:600;}
 <div class="container">
 
 <header>
-  <h1>SmartRoster</h1>
-  <p>智慧班表簽核系統</p>
+<div>
+    <h1>SmartRoster</h1>
+    <p>智慧班表簽核系統</p>
+  </div>
+  
+  <a href="https://smartroster.zeabur.app/admin.html" class="admin-btn">
+    ⚙️ 後台管理
+  </a>
 </header>
 
 <!-- ===== 建立新任務 ===== -->
