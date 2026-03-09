@@ -903,8 +903,8 @@ function renderTasks(){
       <td>
         <div class="row-actions">
           <button class="secondary" onclick="viewTaskDetail('${jsEscape(task.task_id || "")}')">查看內容</button>
-          <button class="secondary" onclick="openSignLink('${jsEscape(task.task_id || "")}')">簽署連結</button>          
-          <button class="danger" onclick="deleteTask('${jsEscape(task.task_id || "")}')">刪除</button>
+         <button class="secondary" onclick="copySignLink('${jsEscape(task.task_id || "")}')">簽署連結</button>          
+         <button class="danger" onclick="deleteTask('${jsEscape(task.task_id || "")}')">刪除</button>
         </div>
       </td>
     `;
@@ -987,13 +987,18 @@ function handleRosterDownload() {
 /* =========================
    單一操作
 ========================= */
-function copyLink(taskId){
+function copySignLink(taskId){
+
   const signUrl = `${window.location.origin}/confirm.html?id=${taskId}`;
-  navigator.clipboard.writeText(signUrl).then(() => {
-    alert(`任務 ${taskId} 連結已複製到剪貼簿`);
-  }).catch(() => {
-    alert("複製失敗，請稍後再試");
-  });
+
+  navigator.clipboard.writeText(signUrl)
+    .then(()=>{
+      alert("簽署連結已複製");
+    })
+    .catch(()=>{
+      alert("複製失敗，請手動複製");
+    });
+
 }
 
 function openReport(taskId){
