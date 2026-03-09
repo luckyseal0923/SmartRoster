@@ -471,11 +471,6 @@ tr:hover td{
 </div>
 
 <div class="card">
-  <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
-    <button id="mainDownloadBtn" class="accent" onclick="handleDownload()">📥 下載簽核紀錄</button>
-    <button id="rosterDownloadBtn" class="primary" onclick="handleRosterDownload()">📅 下載當月班表</button>
-  </div>
-<div class="card">
   <div class="toolbar">
     <div class="toolbar-left">
       <input id="searchInput" type="text" placeholder="搜尋任務ID、建立者、單位、月份..." />
@@ -623,10 +618,7 @@ function handleRosterDownload() {
 /* =========================
    3. 修改原本的 renderTasks 與 updateSelectedCount
 ========================= */
-// 請把原本的 updateSelectedCount 內容直接改為調用 updateUIStats
-function updateSelectedCount() {
-  updateUIStats();
-}
+
 
 // 在 renderTasks 函式內，記得在末尾調用 updateUIStats() 確保看板同步
 function renderTasks() {
@@ -876,6 +868,8 @@ function getSelectedTaskIds(){
 
 /* 將原本那三行刪掉，替換成下面這段 */
 function updateSelectedCount() {
+  updateUIStats();
+
   const ids = getSelectedTaskIds();
   const count = ids.length;
   
@@ -890,7 +884,7 @@ function updateSelectedCount() {
     btnRoster.innerText = "📅 下載當月班表 (單筆)";
   } else {
     btnReport.innerText = `📥 批次下載簽核紀錄 (${count} 筆)`;
-    btnRoster.innerText = `📥 批次下載當月班表 (${count} 筆)`;
+    btnRoster.innerText = `📅 批次下載當月班表 (${count} 筆)`;
   }
 }
 
