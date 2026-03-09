@@ -426,13 +426,6 @@ tr:hover td{
     </div>
   </div>
 
-  <div class="info-bar">
-    <div class="info-chip">任務總數：<strong id="taskCount">0</strong></div>
-    <div class="info-chip">目前篩選後：<strong id="filteredCount">0</strong></div>
-    <div class="info-chip">已勾選：<strong id="selectedCount">0</strong></div>
-    <div class="info-chip">顯示月份：<strong id="rangeText">最近 3 個月份</strong></div>
-  </div>
-
 <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
   <button id="mainDownloadBtn" class="accent" onclick="handleDownload()">📥 下載簽核紀錄</button>
   
@@ -654,12 +647,6 @@ function renderTasks(){
   const tbody = document.getElementById("taskTableBody");
   const filtered = getFilteredTasks();
 
-  document.getElementById("taskCount").innerText = allTasks.length;
-  document.getElementById("filteredCount").innerText = filtered.length;
-  document.getElementById("rangeText").innerText = monthFilter === "all"
-    ? `最近 ${recentMonths.length} 個月份`
-    : monthFilter;
-
   tbody.innerHTML = "";
   document.getElementById("checkAll").checked = false;
 
@@ -752,10 +739,6 @@ function updateSelectedCount() {
   
   const btnReport = document.getElementById("mainDownloadBtn");
   const btnRoster = document.getElementById("rosterDownloadBtn");
-
-  if (document.getElementById("selectedCount")) {
-    document.getElementById("selectedCount").innerText = count;
-  }
 
   if (count === 0) {
     btnReport.innerText = "📥 下載簽核紀錄";
