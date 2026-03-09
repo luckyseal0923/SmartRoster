@@ -30,6 +30,49 @@ body{
   padding:32px;
 }
 
+/* 置頂資訊看板樣式 */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.stats-card {
+  background: var(--card);
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.04);
+  border-left: 5px solid var(--primary); /* 左側強調線 */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.stats-label {
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.stats-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.stats-sublabel {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* 響應式：手機版改為兩列 */
+@media (max-width: 900px) {
+  .stats-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+}
+  
 .container{
   max-width:1400px;
   margin:auto;
@@ -407,7 +450,31 @@ tr:hover td{
   <h1>SmartRoster Admin</h1>
   <p>智慧班表簽核系統｜後台管理</p>
 </header>
+<div class="stats-grid">
+  <div class="stats-card">
+    <div class="stats-label">累計起單總數</div>
+    <div id="statTotal" class="stats-value">0</div>
+  </div>
+  <div class="stats-card">
+    <div class="stats-label">應簽核總人次</div>
+    <div id="statSigners" class="stats-value">0</div>
+  </div>
+  <div class="stats-card">
+    <div class="stats-label">全案總達成率</div>
+    <div id="statTotalRate" class="stats-value" style="color:var(--ok);">0%</div>
+  </div>
+  <div class="stats-card">
+    <div class="stats-label">數位行政效率</div>
+    <div id="statEfficiency" class="stats-value" style="color:var(--info);">0%</div>
+    <div class="stats-sublabel">24小時達成率 > 80% 任務比</div>
+  </div>
+</div>
 
+<div class="card">
+  <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+    <button id="mainDownloadBtn" class="accent" onclick="handleDownload()">📥 下載簽核紀錄</button>
+    <button id="rosterDownloadBtn" class="primary" onclick="handleRosterDownload()">📅 下載當月班表</button>
+  </div>
 <div class="card">
   <div class="toolbar">
     <div class="toolbar-left">
@@ -491,6 +558,85 @@ tr:hover td{
 </div>
 
 <script>
+  /* =========================
+   1. 核心數據計算與 UI 更新
+========================= */
+function updateUIStats() {
+  const ids = getSelectedTaskIds();
+  const count = ids.length;
+
+  // --- 更新按鈕文字 ---
+  const btnReport = document.getElementById("mainDownloadBtn");
+  const btnRoster = document.getElementById("rosterDownloadBtn");
+  
+  if (count === 0) {
+    btnReport.innerText = "📥 下載簽核紀錄";
+    btnRoster.innerText = "📅 下載當月班表";
+  } else if (count === 1) {
+    btnReport.innerText = "📥 下載簽核紀錄 (單筆)";
+    btnRoster.innerText = "📅 下載當月班表 (單筆)";
+  } else {
+    btnReport.innerText = `📥 批次下載簽核紀錄 (${count} 筆)`;
+    btnRoster.innerText = `📥 批次下載當月班表 (${count} 筆)`;
+  }
+
+  // --- 計算置頂看板 (永遠顯示系統總數) ---
+  const totalTasks = allTasks.length;
+  // 加總應簽人次與已簽人次
+  const totalSigners = allTasks.reduce((acc, t) => acc + Number(t.signer_count || 0), 0);
+  const totalSigned = allTasks.reduce((acc, t) => acc + Number(t.signed_count || 0), 0);
+  // 計算 24hr 達成率 > 80% 的任務數
+  const highEffTasks = allTasks.filter(t => Number(t.progress || 0) >= 80).length;
+
+  document.getElementById("statTotal").innerText = totalTasks;
+  document.getElementById("statSigners").innerText = totalSigners;
+  document.getElementById("statTotalRate").innerText = totalSigners > 0 
+    ? Math.round((totalSigned / totalSigners) * 100) + "%" : "0%";
+  document.getElementById("statEfficiency").innerText = totalTasks > 0 
+    ? Math.round((highEffTasks / totalTasks) * 100) + "%" : "0%";
+}
+
+/* =========================
+   2. 下載處理邏輯
+========================= */
+function handleDownload() {
+  const ids = getSelectedTaskIds();
+  if (ids.length === 0) return alert("請先勾選任務");
+  
+  if (ids.length === 1) {
+    openReport(ids[0]);
+  } else {
+    downloadSelectedReports();
+  }
+}
+
+function handleRosterDownload() {
+  const ids = getSelectedTaskIds();
+  if (ids.length === 0) return alert("請先勾選任務");
+  
+  ids.forEach(id => {
+    // 假設班表導出 API 為 roster-export
+    window.open(`https://chihwei-n8n.zeabur.app/webhook/roster-export?task_id=${encodeURIComponent(id)}`, "_blank");
+  });
+}
+
+/* =========================
+   3. 修改原本的 renderTasks 與 updateSelectedCount
+========================= */
+// 請把原本的 updateSelectedCount 內容直接改為調用 updateUIStats
+function updateSelectedCount() {
+  updateUIStats();
+}
+
+// 在 renderTasks 函式內，記得在末尾調用 updateUIStats() 確保看板同步
+function renderTasks() {
+  // ... 前方的過濾與排序邏輯 ...
+  
+  // 記得修改內部的 tr.innerHTML：
+  // 移除 <button class="secondary" onclick="openReport(...)">報表</button>
+  
+  updateUIStats(); 
+}
 /* =========================
    API 設定
 ========================= */
