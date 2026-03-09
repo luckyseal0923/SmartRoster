@@ -579,7 +579,6 @@ tr:hover td{
             <tr>
               <th>員工編號</th>
               <th>姓名</th>
-              <th>來源</th>
               <th>簽核狀態</th>
               <th>簽核時間</th>
             </tr>
@@ -1111,20 +1110,43 @@ async function viewTaskDetail(taskId){
 
     signers.forEach(s => {
       const signed = String(s.signed || s.status || "").toLowerCase();
-      const signedText =
-        signed === "signed" || signed === "done" || signed === "completed"
-          ? "已簽"
-          : "未簽";
+let signedBadge = "";
 
-      const signedTime = s.signed_at || s.updated_at || "-";
+if (signed === "signed" || signed === "done" || signed === "completed") {
+  signedBadge = `<span style="color:#059669;font-weight:600;">已簽</span>`;
+} else {
+  signedBadge = `<span style="color:#dc2626;font-weight:600;">未簽</span>`;
+}
 
+let formattedTime = "-";
+
+const rawTime = s.signed_at || s.updated_at;
+
+if (rawTime) {
+
+  const d = new Date(rawTime);
+
+  if (!isNaN(d.getTime())) {
+
+    formattedTime = d.toLocaleString("zh-TW", {
+      timeZone: "Asia/Taipei",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false
+    });
+
+  }
+
+}
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td>${escapeHtml(s.staff_id || s.staffId || "-")}</td>
-        <td>${escapeHtml(s.name || "-")}</td>
-        <td>${escapeHtml(s.source || "-")}</td>
-        <td>${escapeHtml(signedText)}</td>
-        <td>${escapeHtml(signedTime)}</td>
+<td>${escapeHtml(s.staff_id || s.staffId || "-")}</td>
+<td>${escapeHtml(s.name || "-")}</td>
+<td>${signedBadge}</td>
+<td>${formattedTime}</td>
       `;
       tbody.appendChild(tr);
     });
