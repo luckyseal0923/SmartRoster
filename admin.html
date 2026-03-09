@@ -215,6 +215,18 @@ button:disabled{
   color:#374151;
 }
 
+  /* ===== Table Actions ===== */
+.table-actions{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:12px;
+}
+
+.action-right{
+  display:flex;
+  gap:10px;
+}
 /* ===== table ===== */
 .table-wrap{
   overflow:auto;
@@ -293,9 +305,8 @@ tr:hover td{
 }
 
 .row-actions button{
-  padding:6px 10px;
+  padding:4px 8px;
   font-size:12px;
-  border-radius:8px;
 }
 
 .status-badge{
@@ -504,10 +515,24 @@ tr:hover td{
 </div>
   </div>
 
-<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
-  <button id="mainDownloadBtn" class="accent" onclick="handleDownload()">📥 下載簽核紀錄</button>
-  
-  <button id="rosterDownloadBtn" class="primary" onclick="handleRosterDownload()">📅 下載當月班表</button>
+<div class="table-actions">
+
+  <div class="action-left">
+    <span style="font-size:13px;color:#6b7280;">批次操作</span>
+  </div>
+
+  <div class="action-right">
+
+    <button id="mainDownloadBtn" class="accent" onclick="handleDownload()">
+      📥 下載簽核紀錄
+    </button>
+
+    <button id="rosterDownloadBtn" class="primary" onclick="handleRosterDownload()">
+      📅 下載當月班表
+    </button>
+
+  </div>
+
 </div>
 
   <div class="table-wrap" style="margin-top:16px;">
@@ -878,7 +903,7 @@ function renderTasks(){
       <td>
         <div class="row-actions">
           <button class="secondary" onclick="viewTaskDetail('${jsEscape(task.task_id || "")}')">查看內容</button>
-          <button class="secondary" onclick="copyLink('${jsEscape(task.task_id || "")}')">複製連結</button>
+          <button class="secondary" onclick="openSignLink('${jsEscape(task.task_id || "")}')">簽署連結</button>          
           <button class="danger" onclick="deleteTask('${jsEscape(task.task_id || "")}')">刪除</button>
         </div>
       </td>
@@ -1203,6 +1228,13 @@ function jsEscape(str){
 
   renderTasks();
   renderMonthTags();
+
+}
+  function openSignLink(taskId){
+
+  const signUrl = `${window.location.origin}/confirm.html?id=${taskId}`;
+
+  window.open(signUrl, "_blank");
 
 }
 </script>
