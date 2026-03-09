@@ -434,7 +434,9 @@ tr:hover td{
   </div>
 
 <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
-  <button id="mainDownloadBtn" class="accent" onclick="handleDownload()" disabled>📥 下載簽核報表</button>
+  <button id="mainDownloadBtn" class="accent" onclick="handleDownload()">📥 下載簽核紀錄</button>
+  
+  <button id="rosterDownloadBtn" class="primary" onclick="handleRosterDownload()">📅 下載當月班表</button>
 </div>
 
   <div class="small-note">
@@ -747,37 +749,57 @@ function getSelectedTaskIds(){
 function updateSelectedCount() {
   const ids = getSelectedTaskIds();
   const count = ids.length;
-  const btn = document.getElementById("mainDownloadBtn");
   
-  // 更新介面上的「已勾選：X」數字
+  const btnReport = document.getElementById("mainDownloadBtn");
+  const btnRoster = document.getElementById("rosterDownloadBtn");
+
   if (document.getElementById("selectedCount")) {
     document.getElementById("selectedCount").innerText = count;
   }
 
-  // 根據勾選數量，動態切換按鈕文字與是否可點擊
   if (count === 0) {
-    btn.disabled = true;
-    btn.innerText = "📥 下載報表";
-    btn.classList.remove("accent"); // 沒勾選時移除顏色強調（選配）
+    btnReport.innerText = "📥 下載簽核紀錄";
+    btnRoster.innerText = "📅 下載當月班表";
   } else if (count === 1) {
-    btn.disabled = false;
-    btn.innerText = `📥 下載報表 (單筆)`;
-    btn.classList.add("accent");
+    btnReport.innerText = "📥 下載簽核紀錄 (單筆)";
+    btnRoster.innerText = "📅 下載當月班表 (單筆)";
   } else {
-    btn.disabled = false;
-    btn.innerText = `📥 批次下載報表 (${count} 筆)`;
-    btn.classList.add("accent");
+    btnReport.innerText = `📥 批次下載簽核紀錄 (${count} 筆)`;
+    btnRoster.innerText = `📥 批次下載當月班表 (${count} 筆)`;
   }
 }
 
 // 別忘了也要把這個處理函式貼在下面，這樣點擊按鈕才會動
+// 處理「簽核紀錄」下載
 function handleDownload() {
   const ids = getSelectedTaskIds();
-  if (ids.length === 1) {
-    openReport(ids[0]); // 執行單一開啟
-  } else if (ids.length > 1) {
-    downloadSelectedReports(); // 執行批次處理
+  if (ids.length === 0) {
+    alert("請先勾選要下載簽核紀錄的任務");
+    return;
   }
+  
+  if (ids.length === 1) {
+    openReport(ids[0]);
+  } else {
+    downloadSelectedReports();
+  }
+}
+
+// 處理「當月班表」下載
+function handleRosterDownload() {
+  const ids = getSelectedTaskIds();
+  if (ids.length === 0) {
+    alert("請先勾選要下載班表的任務");
+    return;
+  }
+
+  // 這裡假設你有另一個 API 或邏輯處理班表下載
+  // 如果目前還沒有專門 API，可以先提示或執行跟報表一樣的邏輯
+  ids.forEach(id => {
+    // 範例：開啟班表下載 URL (請根據你的後端調整 API 網址)
+    const url = `https://chihwei-n8n.zeabur.app/webhook/roster-export?task_id=${encodeURIComponent(id)}`;
+    window.open(url, "_blank");
+  });
 }
 
 /* =========================
