@@ -684,7 +684,8 @@ const API_REPORT = "https://chihwei-n8n.zeabur.app/webhook/admin-roster-report";
 const API_DELETE = "https://chihwei-n8n.zeabur.app/webhook/roster-delete";       // 需後端配合
 const API_DETAIL = "https://chihwei-n8n.zeabur.app/webhook/roster-task-detail";   // 需後端配合
 const API_BATCH_EXPORT = "https://chihwei-n8n.zeabur.app/webhook/admin-roster-report"; // 可選，若無則 fallback 多分頁
-
+const API_CLOSE = "https://chihwei-n8n.zeabur.app/webhook/roster-close";
+const API_REOPEN = "https://chihwei-n8n.zeabur.app/webhook/roster-reopen";
 /* =========================
    全域狀態
 ========================= */
@@ -906,13 +907,33 @@ function renderTasks(){
         <span style="font-size:12px;">${progress}% (${Number(task.signed_count || 0)}/${Number(task.signer_count || 0)})</span>
       </td>
 
-      <td>
-        <div class="row-actions">
-          <button class="secondary" onclick="viewTaskDetail('${jsEscape(task.task_id || "")}')">查看內容</button>
-          <button class="secondary"onclick="copySignLink('${jsEscape(task.task_id || "")}')">📋 複製簽核連結</button>         
-          <button class="danger" onclick="deleteTask('${jsEscape(task.task_id || "")}')">刪除</button>
-        </div>
-      </td>
+<td>
+  <div class="row-actions">
+    <button class="secondary" onclick="viewTaskDetail('${jsEscape(task.task_id || "")}')">查看內容</button>
+
+    ${
+      status.key === "done"
+        ? `
+        <button class="secondary" onclick="openReport('${jsEscape(task.task_id || "")}')">
+          下載PDF
+        </button>
+        <button class="accent" onclick="reopenTask('${jsEscape(task.task_id || "")}')">
+          取消結案
+        </button>
+        `
+        : `
+        <button class="secondary" onclick="copySignLink('${jsEscape(task.task_id || "")}')">
+          📋 複製簽核連結
+        </button>
+        <button class="accent" onclick="closeTask('${jsEscape(task.task_id || "")}')">
+          結案
+        </button>
+        `
+    }
+
+    <button class="danger" onclick="deleteTask('${jsEscape(task.task_id || "")}')">刪除</button>
+  </div>
+</td>
     `;
 
     tbody.appendChild(tr);
@@ -1287,6 +1308,81 @@ function jsEscape(str){
   const signUrl = `${window.location.origin}/confirm.html?id=${taskId}`;
 
   window.open(signUrl, "_blank");
+
+}
+
+  /* =========================
+   結案
+========================= */
+
+async function closeTask(taskId){
+
+  const ok = confirm(
+    `確定要結案 ${taskId}？\n\n結案後將：\n• 停止簽核\n• 生成PDF報告`
+  );
+
+  if(!ok) return;
+
+  try{
+
+    const res = await fetch(API_CLOSE,{
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body:JSON.stringify({ task_id:taskId })
+    });
+
+    if(!res.ok){
+      throw new Error("結案失敗");
+    }
+
+    alert("任務已結案並生成PDF");
+
+    refreshTasks();
+
+  }catch(err){
+
+    console.error(err);
+    alert("結案失敗");
+
+  }
+
+}
+
+
+/* =========================
+   取消結案
+========================= */
+
+async function reopenTask(taskId){
+
+  const ok = confirm(
+    `確定要取消結案 ${taskId}？\n\n簽核連結將重新開啟`
+  );
+
+  if(!ok) return;
+
+  try{
+
+    const res = await fetch(API_REOPEN,{
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body:JSON.stringify({ task_id:taskId })
+    });
+
+    if(!res.ok){
+      throw new Error("取消結案失敗");
+    }
+
+    alert("任務已重新開啟");
+
+    refreshTasks();
+
+  }catch(err){
+
+    console.error(err);
+    alert("取消結案失敗");
+
+  }
 
 }
 </script>
