@@ -1040,45 +1040,52 @@ function viewSelectedReports(){
 }
 
 async function downloadSelectedReports(){
+
   const ids = getSelectedTaskIds();
+
   if (!ids.length) {
     alert("請先勾選任務");
     return;
   }
 
-  /* 若未來有 ZIP 匯出 API，可優先使用 */
-  try{
+  try {
+
     const res = await fetch(API_BATCH_EXPORT, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ task_ids: ids })
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        task_ids: ids
+      })
     });
 
-    if (res.ok) {
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "smartroster_reports.zip";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      return;
+    if (!res.ok) {
+      throw new Error("API error");
     }
-  }catch(err){
-    console.warn("批次 ZIP 匯出 API 不可用，改用多分頁下載", err);
+
+    const blob = await res.blob();
+
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "smartroster_reports.zip";
+
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    URL.revokeObjectURL(url);
+
+  } catch (err) {
+
+    console.error(err);
+    alert("下載失敗");
+
   }
 
-  /* fallback：逐筆開啟 */
-  ids.forEach(id => {
-    const url = `${API_REPORT}?task_id=${encodeURIComponent(id)}`;
-    window.open(url, "_blank");
-  });
-
-  alert("目前批次匯出 ZIP API 尚未啟用，已改為逐筆開啟各任務報表。");
 }
-
 /* =========================
    任務明細
 ========================= */
