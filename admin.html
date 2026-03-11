@@ -796,19 +796,26 @@ function renderMonthTags(){
    狀態判斷
 ========================= */
 function getTaskStatus(task){
-  const p = Number(task.progress || 0);
 
-  if (p >= 100) {
-    return { key: "done", text: "已完成", className: "status-done" };
+  const status = String(task.status || "");
+
+  /* ===== 結案 ===== */
+  if (status === "結案") {
+    return {
+      key: "closed",
+      text: "結案",
+      className: "status-done"
+    };
   }
 
-  if (p > 0 && p < 100) {
-    return { key: "progress", text: "進行中", className: "status-progress" };
-  }
+  /* ===== 簽核中 ===== */
+  return {
+    key: "progress",
+    text: "簽核中",
+    className: "status-progress"
+  };
 
-  return { key: "pending", text: "未開始", className: "status-pending" };
 }
-
 /* =========================
    篩選後資料
 ========================= */
