@@ -343,6 +343,10 @@ tr:hover td{
   background:#fef2f2;
   color:#991b1b;
 }
+  .status-closed{
+  background:#fef3c7;
+  color:#92400e;
+}
 
 /* ===== Modal ===== */
 .modal{
@@ -494,9 +498,9 @@ tr:hover td{
       <input id="searchInput" type="text" placeholder="搜尋任務ID、建立者、單位、月份..." />
       <select id="statusFilter">
         <option value="all">全部狀態</option>
-        <option value="pending">未開始</option>
-        <option value="progress">進行中</option>
-        <option value="done">已完成</option>
+<option value="all">全部</option>
+<option value="progress">簽核中</option>
+<option value="closed">結案</option>
       </select>
       <button class="secondary" onclick="refreshTasks()">重新整理</button>
     </div>
@@ -918,25 +922,25 @@ function renderTasks(){
   <div class="row-actions">
     <button class="secondary" onclick="viewTaskDetail('${jsEscape(task.task_id || "")}')">查看內容</button>
 
-    ${
-      status.key === "done"
-        ? `
-        <button class="secondary" onclick="openReport('${jsEscape(task.task_id || "")}')">
-          下載PDF
-        </button>
-        <button class="accent" onclick="reopenTask('${jsEscape(task.task_id || "")}')">
-          取消結案
-        </button>
-        `
-        : `
-        <button class="secondary" onclick="copySignLink('${jsEscape(task.task_id || "")}')">
-          📋 複製簽核連結
-        </button>
-        <button class="accent" onclick="closeTask('${jsEscape(task.task_id || "")}')">
-          結案
-        </button>
-        `
-    }
+${
+  status.key === "closed"
+    ? `
+      <button class="secondary" onclick="openReport('${jsEscape(task.task_id || "")}')">
+        下載PDF
+      </button>
+      <button class="accent" onclick="reopenTask('${jsEscape(task.task_id || "")}')">
+        取消結案
+      </button>
+      `
+    : `
+      <button class="secondary" onclick="copySignLink('${jsEscape(task.task_id || "")}')">
+        📋 複製簽核連結
+      </button>
+      <button class="accent" onclick="closeTask('${jsEscape(task.task_id || "")}')">
+        結案
+      </button>
+      `
+}
 
     <button class="danger" onclick="deleteTask('${jsEscape(task.task_id || "")}')">刪除</button>
   </div>
