@@ -233,9 +233,9 @@ th{color:var(--muted);font-weight:600;}
     <p>智慧班表簽核系統</p>
   </div>
   
-  <a href="https://smartroster.zeabur.app/admin.html" class="admin-btn">
-    ⚙️ 後台管理
-  </a>
+<a href="#" class="admin-btn" onclick="openAdminLogin()">
+⚙️ 後台管理
+</a>
 </header>
 
 <!-- ===== 建立新任務 ===== -->
@@ -966,6 +966,67 @@ function setActiveTag(tag){
     .forEach(t=>t.classList.remove("active"));
   tag.classList.add("active");
 }
+/* ===== Admin Login ===== */
+
+function openAdminLogin(){
+  document.getElementById("adminLoginModal").style.display = "flex";
+}
+
+function closeAdminLogin(){
+  document.getElementById("adminLoginModal").style.display = "none";
+}
+
+async function confirmAdminLogin(){
+
+  const user = document.getElementById("adminUserInput").value.trim();
+  const pwd  = document.getElementById("adminPwdInput").value.trim();
+
+  if(!user || !pwd){
+    alert("請輸入帳號與密碼");
+    return;
+  }
+
+  try{
+
+    const res = await fetch(
+      "https://chihwei-n8n.zeabur.app/webhook/admin_log_in",
+      {
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json"
+        },
+        body: JSON.stringify({
+          username: user,
+          password: pwd
+        })
+      }
+    );
+
+    const data = await res.json();
+
+    if(data.status === "ok"){
+
+      // 登入成功
+      closeAdminLogin();
+
+      window.location.href =
+        "https://smartroster.zeabur.app/admin.html";
+
+    }else{
+
+      alert("帳號或密碼錯誤");
+
+    }
+
+  }catch(err){
+
+    console.error(err);
+    alert("登入服務異常");
+
+  }
+
+}
+  
 </script>
 
 <div class="modal" id="successModal" style="display: none; align-items: center; justify-content: center;">
@@ -1003,6 +1064,29 @@ function setActiveTag(tag){
     <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end;">
       <button class="secondary" onclick="closeDownloadModal()">取消</button>
       <button class="primary" onclick="confirmDownload()">驗證登入</button>
+    </div>
+
+  </div>
+</div>
+  <!-- ===== Admin Login Modal ===== -->
+<div class="modal" id="adminLoginModal">
+  <div class="modal-box" style="width:360px;text-align:center;">
+    
+    <h3>🔐 後台管理登入</h3>
+
+    <div style="margin-top:20px;text-align:left;">
+
+      <label>帳號</label>
+      <input id="adminUserInput">
+
+      <label style="margin-top:12px;">密碼</label>
+      <input id="adminPwdInput" type="password">
+
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end;">
+      <button class="secondary" onclick="closeAdminLogin()">取消</button>
+      <button class="primary" onclick="confirmAdminLogin()">登入</button>
     </div>
 
   </div>
