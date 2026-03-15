@@ -161,52 +161,56 @@
     return canvas.toDataURL() === blank.toDataURL();
   }
 
-  async function submitSignature() {
-    if (!taskId || !staffId) {
-      alert("缺少任務或員編資訊，請從正確連結進入。");
-      return;
-    }
+async function submitSignature() {
 
-    if (isCanvasBlank()) {
-      alert("請先簽名");
-      return;
-    }
-
-    const signatureData = canvas.toDataURL("image/png");
-
-    submitBtn.disabled = true;
-    clearBtn.disabled = true;
-    submitBtn.textContent = "上傳中...";
-
-    try {
-      const res = await fetch("https://chihwei-n8n.zeabur.app/webhook/sign-upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-body: JSON.stringify({
-  taskId: taskId,        // 任務編號
-  staffId: staffId,      // 員編
-  signature: signatureData // Base64 簽名資料
-        })
-      });
-
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || "簽核失敗");
-      }
-
-      const result = await res.json().catch(() => ({ status: "ok", message: "簽核完成" }));
-
-      alert(result.message || "簽核完成");
-      clearCanvas();
-    } catch (err) {
-      console.error(err);
-      alert(err.message || "系統錯誤，請稍後再試");
-    } finally {
-      submitBtn.disabled = false;
-      clearBtn.disabled = false;
-      submitBtn.textContent = "送出簽核";
-    }
+  if (!taskId || !staffId) {
+    alert("缺少任務或員編資訊，請從正確連結進入。");
+    return;
   }
+
+  if (isCanvasBlank()) {
+    alert("請先簽名");
+    return;
+  }
+
+  const signatureData = canvas.toDataURL("image/png");
+
+  submitBtn.disabled = true;
+  clearBtn.disabled = true;
+
+  /* ⭐ 顯示傳送中提示 */
+  submitBtn.textContent = "傳送中...請稍後";
+
+  try {
+
+    const res = await fetch("https://chihwei-n8n.zeabur.app/webhook/sign-upload", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        taskId: taskId,
+        staffId: staffId,
+        signature: signatureData
+      })
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || "簽核失敗");
+    }
+
+    /* ⭐ 傳送成功 → 跳轉完成頁 */
+    window.location.href = "complete.html";
+
+  } catch (err) {
+
+    console.error(err);
+    alert(err.message || "系統錯誤，請稍後再試");
+
+    submitBtn.disabled = false;
+    clearBtn.disabled = false;
+    submitBtn.textContent = "送出簽核";
+  }
+}
 </script>
 
 </body>
