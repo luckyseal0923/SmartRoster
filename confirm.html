@@ -253,13 +253,13 @@ if (record.sign_month) {
 }
 
 // 日期排序（小到大）
-if (Array.isArray(record.schedule) && record.schedule.length > 0) {
+if (Array.isArray(record.schedule_json) && record.schedule_json.length > 0) {
 
-  record.schedule.sort((a, b) => {
+  record.schedule_json.sort((a, b) => {
     return Number(a.date) - Number(b.date);
   });
 
-  record.schedule.forEach(entry => {
+  record.schedule_json.forEach(entry => {
         tbody.innerHTML += `
           <tr>
             <td>${entry.date}</td>
@@ -267,6 +267,7 @@ if (Array.isArray(record.schedule) && record.schedule.length > 0) {
             <td>${entry.note || "-"}</td>
           </tr>`;
       });
+  
     } else {
       tbody.innerHTML = "<tr><td colspan='3'>尚無班表資料</td></tr>";
     }
