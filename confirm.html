@@ -126,12 +126,31 @@
   <!-- 查詢 -->
   <div class="card">
     <h2>班表確認</h2>
+    <!-- 登入區 -->
+<h3>帳號登入</h3>
+
+<div class="search-row">
+  <input id="loginStaff" placeholder="員編">
+</div>
+
+<div class="search-row">
+  <input id="loginPassword" type="password" placeholder="密碼">
+</div>
+
+<div class="search-row">
+  <button onclick="login()">登入</button>
+</div>
+
+<div style="text-align:center;margin-bottom:10px;">
+  <a href="register.html">註冊</a> |
+  <a href="reset.html">忘記密碼</a>
+</div>
 <div id="taskDisplay" style="text-align: center; color: var(--muted); font-size: 13px; margin-bottom: 12px;">
   任務載入中...
 </div>
     <div class="search-row">
-      <input id="staffId" placeholder="請輸入員編" />
-      <button onclick="lookup()">查詢班表</button>
+<input id="staffId" placeholder="員編" readonly />
+      <button id="lookupBtn" onclick="lookup()">查詢班表</button>
     </div>
   </div>
 
@@ -175,7 +194,8 @@ const urlParams = new URLSearchParams(window.location.search);
 const taskId = urlParams.get('id');
 
 let currentStaffId = "";
-
+let isLogin = false;
+let loginStaff = "";
 // 📍 2. 頁面載入檢查
 window.onload = function() {
 
@@ -183,8 +203,7 @@ window.onload = function() {
 
   if (!taskId) {
     display.innerHTML = "<b style='color:red;'>錯誤：缺少任務 ID，請洽單位主管。</b>";
-    document.querySelector(".search-row button").disabled = true;
-    return;
+document.getElementById("lookupBtn").disabled = true;    return;
   }
 
   display.innerText = `任務編號：${taskId}`;
@@ -211,12 +230,70 @@ window.onload = function() {
 
 };
 
+  async function login() {
+
+  const staff = document.getElementById("loginStaff").value.trim();
+  const password = document.getElementById("loginPassword").value.trim();
+
+  if(!staff || !password){
+    alert("請輸入員編與密碼");
+    return;
+  }
+
+  try{
+
+    const res = await fetch(
+      "https://chihwei-n8n.zeabur.app/webhook/staff-login",
+      {
+        method:"POST",
+        headers:{ "Content-Type":"application/json"},
+        body:JSON.stringify({
+          staff_id: staff,
+          password: password
+        })
+      }
+    );
+
+    const data = await res.json();
+
+    if(data.login){
+
+      isLogin = true;
+      loginStaff = staff;
+
+      alert("登入成功");
+
+      document.getElementById("staffId").value = staff;
+      document.getElementById("loginStaff").readOnly = true;
+      document.getElementById("loginPassword").readOnly = true;
+      document.getElementById("lookupBtn").disabled = false;
+
+    }else{
+
+      alert("帳號或密碼錯誤");
+
+    }
+
+  }catch(e){
+
+    alert("登入失敗");
+
+  }
+
+}
 // 📍 3. 查詢班表函數
 async function lookup() {
-  const staffIdInput = document.getElementById("staffId").value.trim();
+  if(!isLogin){
+  alert("請先登入");
+  return;
+}
+const staffIdInput = loginStaff;  
+  if (staffIdInput !== document.getElementById("loginStaff").value.trim()) {
+  alert("登入驗證失敗");
+  return;
+}
   if (!staffIdInput) return alert("請輸入員編");
-
-  const btn = document.querySelector(".search-row button");
+const btn = document.getElementById("lookupBtn");
   btn.innerText = "查詢中...";
   btn.disabled = true;
 
