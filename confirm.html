@@ -116,6 +116,43 @@
   .hidden {
     display: none;
   }
+  /* 登入區 */
+.login-box{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  margin-top:12px;
+}
+
+.login-box input{
+  padding:12px;
+  font-size:16px;
+  border-radius:10px;
+  border:1px solid #d1d5db;
+}
+
+.login-box button{
+  padding:12px;
+  font-size:16px;
+  border-radius:10px;
+  border:none;
+  background:#2563eb;
+  color:white;
+  font-weight:600;
+  cursor:pointer;
+}
+
+.login-links{
+  margin-top:10px;
+  text-align:right;
+  font-size:14px;
+}
+
+.login-links a{
+  margin-left:10px;
+  color:#2563eb;
+  text-decoration:none;
+}
 </style>
 </head>
 
@@ -127,19 +164,6 @@
   <div class="card">
     <h2>班表確認</h2>
     <!-- 登入區 -->
-<h3>帳號登入</h3>
-
-<div class="search-row">
-  <input id="loginStaff" placeholder="員編">
-</div>
-
-<div class="search-row">
-  <input id="loginPassword" type="password" placeholder="密碼">
-</div>
-
-<div class="search-row">
-  <button onclick="login()">登入</button>
-</div>
 
 <div style="text-align:center;margin-bottom:10px;">
   <a href="register.html">註冊</a> |
@@ -148,10 +172,23 @@
 <div id="taskDisplay" style="text-align: center; color: var(--muted); font-size: 13px; margin-bottom: 12px;">
   任務載入中...
 </div>
-    <div class="search-row">
-<input id="staffId" placeholder="員編" readonly />
-      <button id="lookupBtn" onclick="lookup()">查詢班表</button>
-    </div>
+    <div class="login-box">
+
+  <input id="loginStaff" placeholder="員編">
+
+  <input id="loginPassword" type="password" placeholder="密碼">
+
+  <button id="lookupBtn" onclick="lookup()">
+    登入查核班表
+  </button>
+
+</div>
+
+<div class="login-links">
+  <a href="register.html">註冊</a>
+  <a href="reset.html">忘記密碼</a>
+</div>
+
   </div>
 
   <!-- 查詢結果 -->
@@ -287,8 +324,11 @@ async function lookup() {
   alert("請先登入");
   return;
 }
-const staffIdInput = loginStaff;  
-  if (staffIdInput !== document.getElementById("loginStaff").value.trim()) {
+const staffIdInput =
+document.getElementById("loginStaff").value.trim();
+
+const password =
+document.getElementById("loginPassword").value.trim();  if (staffIdInput !== document.getElementById("loginStaff").value.trim()) {
   alert("登入驗證失敗");
   return;
 }
@@ -298,7 +338,17 @@ const btn = document.getElementById("lookupBtn");
   btn.disabled = true;
 
   try {
-    const res = await fetch(`https://chihwei-n8n.zeabur.app/webhook/Staff-check-roster?taskId=${taskId}&staffId=${encodeURIComponent(staffIdInput)}`);
+const res = await fetch(
+`https://chihwei-n8n.zeabur.app/webhook/Staff-check-roster`,
+{
+method:"POST",
+headers:{ "Content-Type":"application/json"},
+body:JSON.stringify({
+taskId:taskId,
+staffId:staffIdInput,
+password:password
+})
+});
     if (!res.ok) throw new Error("查無此員編或任務已過期");
 
     const record = await res.json();
