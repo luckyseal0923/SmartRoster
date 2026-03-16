@@ -153,6 +153,55 @@
   color:#2563eb;
   text-decoration:none;
 }
+  /* Modal */
+
+.modal{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.45);
+display:flex;
+align-items:center;
+justify-content:center;
+z-index:999;
+}
+
+.modal-content{
+background:#fff;
+padding:24px;
+border-radius:12px;
+width:320px;
+display:flex;
+flex-direction:column;
+gap:10px;
+box-shadow:0 10px 30px rgba(0,0,0,0.2);
+}
+
+.modal-content input{
+padding:10px;
+border-radius:8px;
+border:1px solid #ccc;
+}
+
+.modal-content button{
+padding:10px;
+border:none;
+border-radius:8px;
+background:#2563eb;
+color:#fff;
+font-weight:600;
+cursor:pointer;
+}
+
+.modal-close{
+background:#6b7280;
+}
+
+.modal.hidden{
+display:none;
+}
 </style>
 </head>
 
@@ -175,15 +224,15 @@
 
   <input id="loginPassword" type="password" placeholder="密碼">
 
-  <button id="lookupBtn" onclick="lookup()">
-    登入查核班表
-  </button>
+<button id="lookupBtn" onclick="login()">
+登入查核班表
+</button>
 
 </div>
 
 <div class="login-links">
-  <a href="register.html">註冊</a>
-  <a href="reset.html">忘記密碼</a>
+  <a href="#" onclick="openRegister()">註冊</a>
+  <a href="#" onclick="openReset()">忘記密碼</a>
 </div>
 
   </div>
@@ -295,9 +344,8 @@ document.getElementById("lookupBtn").disabled = true;    return;
       isLogin = true;
       loginStaff = staff;
 
-      alert("登入成功");
-
-      document.getElementById("staffId").value = staff;
+alert("登入成功");
+lookup();
       document.getElementById("loginStaff").readOnly = true;
       document.getElementById("loginPassword").readOnly = true;
       document.getElementById("lookupBtn").disabled = false;
@@ -412,7 +460,154 @@ function goSign() {
   // 帶著 ID 前往簽名頁
   location.href = `sign.html?id=${taskId}&staffId=${encodeURIComponent(currentStaffId)}`;
 }
+/* Modal 控制 */
+
+function openRegister(){
+document.getElementById("registerModal").classList.remove("hidden");
+}
+
+function openReset(){
+document.getElementById("resetModal").classList.remove("hidden");
+}
+
+function closeModal(){
+document.getElementById("registerModal").classList.add("hidden");
+document.getElementById("resetModal").classList.add("hidden");
+}
+
+
+/* 註冊 */
+
+async function submitRegister(){
+
+const staff = document.getElementById("regStaff").value.trim();
+const birthday = document.getElementById("regBirthday").value.trim();
+const unit = document.getElementById("regUnit").value.trim();
+const pass1 = document.getElementById("regPassword").value.trim();
+const pass2 = document.getElementById("regPassword2").value.trim();
+
+if(pass1 !== pass2){
+alert("兩次密碼不一致");
+return;
+}
+
+const res = await fetch(
+"https://chihwei-n8n.zeabur.app/webhook/staff-register",
+{
+method:"POST",
+headers:{ "Content-Type":"application/json"},
+body:JSON.stringify({
+staff_id:staff,
+birthday:birthday,
+unit:unit,
+password:pass1
+})
+});
+
+const data = await res.json();
+
+if(data.success){
+
+alert("註冊成功");
+
+document.getElementById("loginStaff").value = staff;
+document.getElementById("loginPassword").value = pass1;
+
+closeModal();
+
+/* 自動登入 */
+login();
+
+}else{
+
+alert(data.message || "註冊失敗");
+
+}
+
+}
+
+
+/* 重設密碼 */
+
+async function submitReset(){
+
+const staff = document.getElementById("resetStaff").value.trim();
+const birthday = document.getElementById("resetBirthday").value.trim();
+const pass1 = document.getElementById("resetPassword").value.trim();
+const pass2 = document.getElementById("resetPassword2").value.trim();
+
+if(pass1 !== pass2){
+alert("兩次密碼不一致");
+return;
+}
+
+const res = await fetch(
+"https://chihwei-n8n.zeabur.app/webhook/staff-reset-password",
+{
+method:"POST",
+headers:{ "Content-Type":"application/json"},
+body:JSON.stringify({
+staff_id:staff,
+birthday:birthday,
+password:pass1
+})
+});
+
+const data = await res.json();
+
+if(data.success){
+
+alert("密碼更新成功");
+
+closeModal();
+
+}else{
+
+alert(data.message || "驗證失敗");
+
+}
+
+}
+  
 </script>
 
+  <!-- 註冊 Modal -->
+<div id="registerModal" class="modal hidden">
+<div class="modal-content">
+
+<h3>新帳號註冊</h3>
+
+<input id="regStaff" placeholder="員編 (W+員編)">
+<input id="regBirthday" placeholder="生日 (民國七碼 0740121)">
+<input id="regUnit" placeholder="服務單位">
+<input id="regPassword" type="password" placeholder="密碼 (6碼以上英文+數字)">
+<input id="regPassword2" type="password" placeholder="再次輸入密碼">
+
+<button onclick="submitRegister()">建立帳號</button>
+
+<button class="modal-close" onclick="closeModal()">取消</button>
+
+</div>
+</div>
+
+
+<!-- 重設密碼 Modal -->
+<div id="resetModal" class="modal hidden">
+<div class="modal-content">
+
+<h3>重設密碼</h3>
+
+<input id="resetStaff" placeholder="員編 (W+員編)">
+<input id="resetBirthday" placeholder="生日 (民國七碼 0740121)">
+
+<input id="resetPassword" type="password" placeholder="新密碼">
+<input id="resetPassword2" type="password" placeholder="再次輸入密碼">
+
+<button onclick="submitReset()">更新密碼</button>
+
+<button class="modal-close" onclick="closeModal()">取消</button>
+
+</div>
+</div>
 </body>
 </html>
