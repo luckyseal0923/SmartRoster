@@ -411,49 +411,65 @@ document.getElementById("resetModal").classList.add("hidden");
 
 /* 註冊 */
 
-async function submitRegister(){
-const name = document.getElementById("regName").value.trim();
-const staff = document.getElementById("regStaff").value.trim();
-const birthday = document.getElementById("regBirthday").value.trim();
-const unit = document.getElementById("regUnit").value.trim();
-const pass1 = document.getElementById("regPassword").value.trim();
-const pass2 = document.getElementById("regPassword2").value.trim();
+async function submitRegister() {
+  // 1. 抓取畫面上所有輸入框的值 (包含新增的姓名)
+  const name = document.getElementById("regName").value.trim();
+  const staff = document.getElementById("regStaff").value.trim();
+  const birthday = document.getElementById("regBirthday").value.trim();
+  const unit = document.getElementById("regUnit").value.trim();
+  const pass1 = document.getElementById("regPassword").value.trim();
+  const pass2 = document.getElementById("regPassword2").value.trim();
 
-if(pass1 !== pass2){
-alert("兩次密碼不一致");
-return;
-}
+  // 2. 檢查姓名跟員編有沒有填
+  if (!name || !staff) {
+    alert("姓名與員編為必填項目");
+    return;
+  }
 
-const res = await fetch(
-"https://chihwei-n8n.zeabur.app/webhook/staff-register",
-{
-method:"POST",
-headers:{ "Content-Type":"application/json"},
-body:JSON.stringify({
-staff_id:staff,
-birthday:birthday,
-unit:unit,
-password:pass1
-})
-});
+  // 3. 檢查兩次密碼是否相同
+  if (pass1 !== pass2) {
+    alert("兩次密碼不一致");
+    return;
+  }
 
-const data = await res.json();
+  try {
+    // 4. 送出資料給 n8n
+    const res = await fetch(
+      "https://chihwei-n8n.zeabur.app/webhook/staff-register",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name,         // <--- 這裡會把姓名傳給 n8n
+          staff_id: staff,
+          birthday: birthday,
+          unit: unit,
+          password: pass1
+        })
+      }
+    );
 
-if(data.success){
+    const data = await res.json();
 
-alert("註冊成功");
+    // 5. 如果註冊成功
+    if (data.success) {
+      alert("註冊成功！請輸入密碼進行登入。");
 
-document.getElementById("loginStaff").value = staff;
-document.getElementById("loginPassword").value = pass1;
+      // 自動幫同仁填好員編，但密碼空著讓他自己打
+      document.getElementById("loginStaff").value = staff;
+      document.getElementById("loginPassword").value = "";
 
-closeModal();
+      // 關閉註冊小視窗
+      closeModal();
 
-}else{
-
-alert(data.message || "註冊失敗");
-
-}
-
+      // 💡 移除原本的 login(); 不再自動登入，避免出錯
+      
+    } else {
+      alert(data.message || "註冊失敗");
+    }
+  } catch (e) {
+    alert("註冊連線失敗，請檢查網路");
+  }
 }
 
 
