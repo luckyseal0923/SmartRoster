@@ -857,6 +857,53 @@ function removeDetected(index) {
         renderSignerList();
     }
 }
+  /* 補這段：手動補登功能邏輯 */
+function addManualSigner() {
+    const idInput = document.getElementById("manualStaffId");
+    const nameInput = document.getElementById("manualName");
+    const id = idInput.value.trim();
+    const name = nameInput.value.trim();
+
+    if (!id) {
+        alert("請輸入員工編號");
+        return;
+    }
+
+    // 檢查是否重複
+    if (detectedSigners.some(s => s.staffId === id) || manualSigners.some(s => s.staffId === id)) {
+        alert("此員工編號已存在");
+        return;
+    }
+
+    // 加入手動清單陣列
+    manualSigners.push({ staffId: id, name: name });
+
+    // 清空輸入框
+    idInput.value = "";
+    nameInput.value = "";
+
+    // 重新畫出手動清單
+    renderManualList();
+}
+
+function renderManualList() {
+    const ul = document.getElementById("manualList");
+    ul.innerHTML = "";
+    manualSigners.forEach((s, idx) => {
+        const li = document.createElement("li");
+        li.style = "display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; padding:4px; border-bottom:1px solid #eee;";
+        li.innerHTML = `
+            <span><b>${s.staffId}</b> ${s.name}</span>
+            <button onclick="removeManual(${idx})" style="border:none; background:none; color:#b91c1c; cursor:pointer; font-size:16px;">✖</button>
+        `;
+        ul.appendChild(li);
+    });
+}
+
+function removeManual(idx) {
+    manualSigners.splice(idx, 1);
+    renderManualList();
+}
 </script>
 
 <div class="modal" id="successModal" style="display: none; align-items: center; justify-content: center;">
