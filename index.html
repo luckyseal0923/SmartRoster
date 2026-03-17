@@ -904,6 +904,66 @@ function removeManual(idx) {
     manualSigners.splice(idx, 1);
     renderManualList();
 }
+
+  async function confirmCreate() {
+    // 1. 基本檢查
+    if (!detectedSigners.length && !manualSigners.length) {
+        alert("清單內無簽核人員，請先執行辨識或手動補登");
+        return;
+    }
+
+    const btn = document.getElementById("createBtn");
+    btn.textContent = "建立中…";
+    btn.disabled = true;
+
+    try {
+        const fd = new FormData();
+
+        // 帶入主表單資料
+        fd.append("creator", creator.value);
+        fd.append("creator_staff_id", staffId.value);
+        fd.append("unit", unit.value);
+        fd.append("sign_month", month.value);
+        fd.append("password", password.value);
+
+        // 帶入人員資料 (轉成字串)
+        fd.append("detected_signers", JSON.stringify(detectedSigners));
+        fd.append("manual_signers", JSON.stringify(manualSigners));
+
+        // 帶入原始 Excel 檔案
+        if (fileInput.files.length) {
+            fd.append("file", fileInput.files[0]);
+        }
+
+        const res = await fetch("https://chihwei-n8n.zeabur.app/webhook/roster-create", {
+            method: "POST",
+            body: fd
+        });
+
+        const data = await res.json();
+
+        if (data.status === "ok") {
+            // 準備通知連結
+            const tid = data.task_id;
+            const confirmUrl = `https://smartroster.zeabur.app/confirm.html?id=${tid}`;
+            document.getElementById("shareText").innerText = `請點擊下方連結確認班表：\n🔗 ${confirmUrl}`;
+            
+            // 顯示成功彈窗
+            document.getElementById("successModal").style.display = "flex";
+            
+            // 關閉建立視窗並重整下方任務清單
+            document.getElementById("modal").style.display = "none";
+            fetchTasks(); 
+        } else {
+            throw new Error(data.message || "建立失敗");
+        }
+    } catch (err) {
+        alert("❌ 建立任務失敗：" + err.message);
+    } finally {
+        btn.textContent = "建立任務";
+        btn.disabled = false;
+    }
+}
 </script>
 
 <div class="modal" id="successModal" style="display: none; align-items: center; justify-content: center;">
