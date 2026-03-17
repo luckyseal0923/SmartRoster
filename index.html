@@ -926,9 +926,21 @@ function removeManual(idx) {
         fd.append("sign_month", month.value);
         fd.append("password", password.value);
 
-        // 帶入人員資料 (轉成字串)
-        fd.append("detected_signers", JSON.stringify(detectedSigners));
-        fd.append("manual_signers", JSON.stringify(manualSigners));
+    const detectedWithSource = detectedSigners.map(s => ({
+        ...s,
+        source: 'system' 
+    }));
+
+    const manualWithSource = manualSigners.map(s => ({
+        ...s,
+        source: 'manual' 
+    }));
+  
+    // 📍 2. 關鍵修正：這裡要改成送出「處理過」的變數 (WithSource)
+    // 把原本的 detectedSigners 改成 detectedWithSource
+    // 把原本的 manualSigners 改成 manualWithSource
+    fd.append("detected_signers", JSON.stringify(detectedWithSource));
+    fd.append("manual_signers", JSON.stringify(manualWithSource));
 
         // 帶入原始 Excel 檔案
         if (fileInput.files.length) {
