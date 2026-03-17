@@ -413,40 +413,40 @@ function validateForm(){
   document.getElementById(id).addEventListener("input",validateForm);
 });
 
-/* ===== 查核辨識（正確 async 版本） ===== */
-/* ===== 查核辨識（加入驗證與紅字提醒） ===== */
 async function runCheck(){
   const modal = document.getElementById("modal");
   const content = document.getElementById("checkContent");
-  const signerBox = document.getElementById("signerList"); // 取得清單容器
+  const signerBox = document.getElementById("signerList"); 
 
-  // 📍 1. 欄位完整性與密碼長度檢查
-  const isFormValid = creator.value && staffId.value && unit.value && month.value;
-  if (!isFormValid) {
-    alert("❌ 請先填寫任務建立者、員編、單位與月份！");
+  // 📍 1. 欄位完整性檢查 (建立任務資訊未補起，不給觸發)
+  if (!creator.value || !staffId.value || !unit.value || !month.value) {
+    alert("❌ 請填寫任務建立者、員編、單位與月份後再進行辨識！");
     return;
   }
+
+  // 📍 2. 密碼至少要六碼
   if (password.value.length < 6) {
-    alert("❌ 設定密碼至少需要 6 碼！");
+    alert("❌ 安全提示：任務設定密碼至少需要 6 碼！");
     password.focus();
     return;
   }
+
   if (!fileInput.files.length) {
-    alert("❌ 請上傳班表 Excel 檔案以進行辨識");
+    alert("❌ 請先上傳班表 Excel");
     return;
   }
 
-  // 📍 2. 清空舊有資料，防止帶入上個任務的清單
+  // 📍 3. 清空上次辨識的清單與變數 (防止帶入上個任務)
   detectedSigners = [];
   manualSigners = [];
-  document.getElementById("manualList").innerHTML = "";
   signerBox.innerHTML = ""; 
+  document.getElementById("manualList").innerHTML = "";
 
   const fd = new FormData();
   fd.append("file", fileInput.files[0]);
 
-  // 📍 3. 顯示醒目紅字提醒
-  content.innerHTML = `<div style="color: #b91c1c; font-weight: bold; font-size: 18px; animation: pulse 1.5s infinite;">⏳ 辨識中，請稍候...</div>`;
+  // 📍 4. 醒目紅字提醒 (辨識中請稍後)
+  content.innerHTML = `<div style="color: #b91c1c; font-weight: bold; font-size: 18px; animation: pulse 1.5s infinite;">⏳ 系統辨識中，請稍候...</div>`;
   modal.style.display = "flex";
 
   try {
@@ -475,6 +475,7 @@ async function runCheck(){
     renderSignerList();
 
   } catch (err) {
+    console.error(err);
     content.innerHTML = `<div class="status-bad">❌ 系統錯誤：${err.message}</div>`;
   }
 }
@@ -670,10 +671,10 @@ if (!res.ok || data.status !== "ok") {
     document.getElementById("password").value = "";
     clearFile(); 
     
-    // 📍 確保完全清空暫存與清單渲染
+    // 📍 確保清單渲染被清空
     detectedSigners = [];
     manualSigners = [];
-    document.getElementById("signerList").innerHTML = ""; // 新增這行
+    document.getElementById("signerList").innerHTML = ""; // 補上這行
     renderManualList();
     
     validateForm(); 
@@ -692,11 +693,11 @@ if (!res.ok || data.status !== "ok") {
 function cancelCreate(){
   if (!confirm("確定要取消建立任務？這將會清空本次辨識的所有清單。")) return;
   
-  // 📍 清空辨識與手動暫存陣列
+  // 📍 清空變數
   detectedSigners = [];
   manualSigners = [];
   
-  // 📍 清空畫面顯示
+  // 📍 清空畫面 HTML 內容 (防止下次開啟 Modal 時看到舊資料)
   document.getElementById("signerList").innerHTML = "";
   document.getElementById("manualList").innerHTML = "";
   document.getElementById("checkContent").innerHTML = "";
