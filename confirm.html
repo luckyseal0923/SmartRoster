@@ -412,7 +412,7 @@ document.getElementById("resetModal").classList.add("hidden");
 /* 註冊 */
 
 async function submitRegister(){
-
+const name = document.getElementById("regName").value.trim();
 const staff = document.getElementById("regStaff").value.trim();
 const birthday = document.getElementById("regBirthday").value.trim();
 const unit = document.getElementById("regUnit").value.trim();
@@ -509,7 +509,7 @@ alert(data.message || "驗證失敗");
 <div class="modal-content">
 
 <h3>新帳號註冊</h3>
-
+<input id="regName" placeholder="姓名 (例如：張小明)">
 <input id="regStaff" placeholder="員編 (大W+員編)">
 <input id="regBirthday" placeholder="生日 (民國七碼 0740121)">
 <input id="regUnit" placeholder="服務單位">
