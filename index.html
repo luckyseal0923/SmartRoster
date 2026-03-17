@@ -413,12 +413,14 @@ function validateForm(){
   document.getElementById(id).addEventListener("input",validateForm);
 });
 
-async function runCheck(){
+/* ===== 查核辨識 (含欄位驗證、舊資料清除、紅字提醒) ===== */
+async function runCheck() {
   const modal = document.getElementById("modal");
   const content = document.getElementById("checkContent");
-  const signerBox = document.getElementById("signerList"); 
+  const signerBox = document.getElementById("signerList");
+  const manualListBox = document.getElementById("manualList");
 
-  // 📍 1. 欄位完整性檢查 (建立任務資訊未補起，不給觸發)
+  // 📍 1. 欄位完整性檢查 (建立任務資訊未補齊，不給觸發)
   if (!creator.value || !staffId.value || !unit.value || !month.value) {
     alert("❌ 請填寫任務建立者、員編、單位與月份後再進行辨識！");
     return;
@@ -431,22 +433,29 @@ async function runCheck(){
     return;
   }
 
+  // 📍 3. 檢查 Excel 是否上傳
   if (!fileInput.files.length) {
     alert("❌ 請先上傳班表 Excel");
     return;
   }
 
-  // 📍 3. 清空上次辨識的清單與變數 (防止帶入上個任務)
+  // 📍 4. 徹底清空上次辨識的暫存資料與畫面 (核心修正：防止資料殘留)
   detectedSigners = [];
   manualSigners = [];
   signerBox.innerHTML = ""; 
-  document.getElementById("manualList").innerHTML = "";
+  manualListBox.innerHTML = "";
+  content.innerHTML = "";
 
+  // 📍 5. 準備上傳資料
   const fd = new FormData();
   fd.append("file", fileInput.files[0]);
 
-  // 📍 4. 醒目紅字提醒 (辨識中請稍後)
-  content.innerHTML = `<div style="color: #b91c1c; font-weight: bold; font-size: 18px; animation: pulse 1.5s infinite;">⏳ 系統辨識中，請稍候...</div>`;
+  // 📍 6. 醒目紅字提醒 (辨識中請稍候)
+  content.innerHTML = `
+    <div style="color: #b91c1c; font-weight: bold; font-size: 18px; animation: pulse 1.5s infinite; text-align: center; padding: 10px;">
+      ⏳ 系統辨識中，請稍候...
+    </div>
+  `;
   modal.style.display = "flex";
 
   try {
@@ -455,28 +464,46 @@ async function runCheck(){
       { method: "POST", body: fd }
     );
 
+    // 先取得文字，避免 JSON 解析失敗導致抓不到錯誤原因
     const text = await res.text();
     let data;
-    try { data = JSON.parse(text); } catch (e) { throw new Error("後端回傳格式錯誤"); }
+    try { 
+      data = JSON.parse(text); 
+    } catch (e) { 
+      throw new Error("伺服器回傳格式不正確 (非 JSON)"); 
+    }
 
+    // 判斷後端回傳狀態
     if (!res.ok || data.status !== "ok") {
-      content.innerHTML = `<div class="status-bad">❌ ${data.message || "查核失敗"}</div>`;
+      content.innerHTML = `
+        <div class="status-bad" style="padding: 10px; background: #fee2e2; border-radius: 8px;">
+          ❌ ${data.message || "系統辨識失敗，請確認檔案格式"}
+        </div>
+      `;
       return;
     }
 
+    // 📍 7. 辨識成功：處理資料並渲染
     detectedSigners = data.signers || [];
     signerPage = 1;
 
     content.innerHTML = `
-      <div class="status-ok" style="font-weight:bold;">✔ 查核通過</div>
-      <div style="margin-top:8px;">系統成功辨識：<b>${detectedSigners.length}</b> 人</div>
+      <div style="background: #ecfdf5; padding: 12px; border-radius: 8px; border-left: 5px solid #059669;">
+        <div class="status-ok" style="font-weight:bold; font-size: 16px;">✔ 查核通過</div>
+        <div style="margin-top:4px; color: #374151;">系統成功辨識人員：<b>${detectedSigners.length}</b> 人</div>
+      </div>
     `;
 
+    // 呼叫原本的清單渲染函數
     renderSignerList();
 
   } catch (err) {
-    console.error(err);
-    content.innerHTML = `<div class="status-bad">❌ 系統錯誤：${err.message}</div>`;
+    console.error("RunCheck Error:", err);
+    content.innerHTML = `
+      <div class="status-bad" style="padding: 10px; background: #fee2e2; border-radius: 8px;">
+        ❌ 系統錯誤：${err.message}
+      </div>
+    `;
   }
 }
 
