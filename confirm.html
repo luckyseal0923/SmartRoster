@@ -272,49 +272,34 @@ display:none;
 </div>
 
 <script>
-// 📍 1. 抓取 URL 中的 task_id (例如：confirm.html?id=task-202603-XXX)
 const urlParams = new URLSearchParams(window.location.search);
 const taskId = urlParams.get('id');
 
 let currentStaffId = "";
 let isLogin = false;
 let loginStaff = "";
-// 📍 2. 頁面載入檢查
+
 window.onload = function() {
-
   const display = document.getElementById("taskDisplay");
-
   if (!taskId) {
     display.innerHTML = "<b style='color:red;'>錯誤：缺少任務 ID，請洽單位主管。</b>";
-document.getElementById("lookupBtn").disabled = true;    return;
+    document.getElementById("lookupBtn").disabled = true;
+    return;
   }
-
   display.innerText = `任務編號：${taskId}`;
 
-  /* ===== 從 taskId 解析簽核月份 ===== */
-
-  // task-202604-L9B
   const match = taskId.match(/task-(\d{6})/);
-
   if (match) {
-
-    const ym = match[1];   // 202604
-
+    const ym = match[1];
     const year = ym.substring(0,4);
     const month = parseInt(ym.substring(4,6),10);
-
     const title = document.getElementById("scheduleTitle");
-
-    if (title) {
-      title.innerText = `班表內容｜${year}年${month}月`;
-    }
-
+    if (title) title.innerText = `班表內容｜${year}年${month}月`;
   }
-
 };
 
-  async function login() {
-
+// 📍 1. 登入並直接取得資料
+async function login() {
   const staff = document.getElementById("loginStaff").value.trim();
   const password = document.getElementById("loginPassword").value.trim();
 
@@ -323,14 +308,17 @@ document.getElementById("lookupBtn").disabled = true;    return;
     return;
   }
 
-  try{
+  const btn = document.getElementById("lookupBtn");
+  btn.innerText = "驗證並載入中...";
+  btn.disabled = true;
 
+  try {
     const res = await fetch(
       "https://chihwei-n8n.zeabur.app/webhook/staff-login",
       {
-        method:"POST",
-        headers:{ "Content-Type":"application/json"},
-        body:JSON.stringify({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           staff_id: staff,
           password: password,
           task_id: taskId
@@ -340,127 +328,71 @@ document.getElementById("lookupBtn").disabled = true;    return;
 
     const data = await res.json();
 
-    if(data.login){
-
+    if (data.login) {
       isLogin = true;
       loginStaff = staff;
+      alert("登入成功");
 
-alert("登入成功");
-lookup();
+      // 這裡不再呼叫 lookup()，直接把拿到的 data 丟給顯示函數
+      displayData(data);
+
       document.getElementById("loginStaff").readOnly = true;
       document.getElementById("loginPassword").readOnly = true;
-      document.getElementById("lookupBtn").disabled = false;
-
-    }else{
-
-      alert("帳號或密碼錯誤");
-
-    }
-
-  }catch(e){
-
-    alert("登入失敗");
-
-  }
-
-}
-// 📍 3. 查詢班表函數
-async function lookup() {
-  if(!isLogin){
-  alert("請先登入");
-  return;
-}
-const staffIdInput =
-document.getElementById("loginStaff").value.trim();
-
-const password =
-document.getElementById("loginPassword").value.trim();  if (staffIdInput !== document.getElementById("loginStaff").value.trim()) {
-  alert("登入驗證失敗");
-  return;
-}
-  if (!staffIdInput) return alert("請輸入員編");
-const btn = document.getElementById("lookupBtn");
-  btn.innerText = "查詢中...";
-  btn.disabled = true;
-
-  try {
-const res = await fetch(
-`https://chihwei-n8n.zeabur.app/webhook/Staff-check-roster`,
-{
-method:"POST",
-headers:{ "Content-Type":"application/json"},
-body:JSON.stringify({
-taskId:taskId,
-staffId:staffIdInput,
-password:password
-})
-});
-    if (!res.ok) throw new Error("查無此員編或任務已過期");
-
-    const record = await res.json();
-    currentStaffId = staffIdInput;
-
-    document.getElementById("name").innerText = record.name || "未定義";
-    document.getElementById("staff").innerText = record.staff_id || staffIdInput;
-
-    const tbody = document.getElementById("scheduleTable");
-    tbody.innerHTML = "";
-
-// 顯示簽核月份
-if (record.sign_month) {
-  const ym = String(record.sign_month);
-
-  let year, month;
-
-  if (ym.includes("-")) {
-    [year, month] = ym.split("-");
-  } else {
-    year = ym.substring(0,4);
-    month = ym.substring(4,6);
-  }
-
-  month = parseInt(month,10);
-
-  document.getElementById("scheduleTitle").innerText =
-    `班表內容｜${year}年${month}月`;
-}
-
-// 日期排序（小到大）
-if (Array.isArray(record.schedule_json) && record.schedule_json.length > 0) {
-
-  record.schedule_json.sort((a, b) => {
-    return Number(a.date) - Number(b.date);
-  });
-
-  record.schedule_json.forEach(entry => {
-        tbody.innerHTML += `
-          <tr>
-            <td>${entry.date}</td>
-            <td>${entry.shift}</td>
-            <td>${entry.note || "-"}</td>
-          </tr>`;
-      });
-  
+      btn.innerText = "查詢成功";
     } else {
-      tbody.innerHTML = "<tr><td colspan='3'>尚無班表資料</td></tr>";
+      alert(data.message || "帳號或密碼錯誤");
+      btn.innerText = "登入查核班表";
+      btn.disabled = false;
     }
-
-    document.getElementById("resultCard").classList.remove("hidden");
-  } catch (err) {
-    alert(err.message || "查詢失敗，請稍後再試");
-    document.getElementById("resultCard").classList.add("hidden");
-  } finally {
-    btn.innerText = "查詢班表";
+  } catch (e) {
+    alert("系統連線失敗");
     btn.disabled = false;
+    btn.innerText = "登入查核班表";
   }
 }
 
-// 📍 4. 前往簽核頁面
+// 📍 2. 專門負責把資料塞進 HTML 的函數
+function displayData(record) {
+  currentStaffId = record.staff_id;
+  document.getElementById("name").innerText = record.name || "未定義";
+  document.getElementById("staff").innerText = record.staff_id;
+
+  const tbody = document.getElementById("scheduleTable");
+  tbody.innerHTML = "";
+
+  // 顯示簽核月份 (如果 API 有回傳)
+  if (record.sign_month) {
+    const ym = String(record.sign_month);
+    let year = ym.substring(0,4);
+    let month = parseInt(ym.substring(5,7) || ym.substring(4,6), 10);
+    document.getElementById("scheduleTitle").innerText = `班表內容｜${year}年${month}月`;
+  }
+
+  // 處理班表排序與顯示
+  if (Array.isArray(record.schedule_json) && record.schedule_json.length > 0) {
+    record.schedule_json.sort((a, b) => Number(a.date) - Number(b.date));
+    record.schedule_json.forEach(entry => {
+      tbody.innerHTML += `
+        <tr>
+          <td>${entry.date}</td>
+          <td>${entry.shift}</td>
+          <td>${entry.note || "-"}</td>
+        </tr>`;
+    });
+  } else {
+    tbody.innerHTML = "<tr><td colspan='3'>尚無班表資料</td></tr>";
+  }
+
+  // 顯示結果區塊
+  document.getElementById("resultCard").classList.remove("hidden");
+}
+
+// 📍 3. 前往簽核頁面
 function goSign() {
   if (!currentStaffId || !taskId) return alert("資料不完整");
-  // 帶著 ID 前往簽名頁
   location.href = `sign.html?id=${taskId}&staffId=${encodeURIComponent(currentStaffId)}`;
 }
+  
 /* Modal 控制 */
 
 function openRegister(){
