@@ -942,18 +942,35 @@ function removeManual(idx) {
 
         const data = await res.json();
 
-        if (data.status === "ok") {
-            // 準備通知連結
+if (data.status === "ok") {
+            // 📍 1. 取得任務資訊
             const tid = data.task_id;
             const confirmUrl = `https://smartroster.zeabur.app/confirm.html?id=${tid}`;
-            document.getElementById("shareText").innerText = `請點擊下方連結確認班表：\n🔗 ${confirmUrl}`;
             
-            // 顯示成功彈窗
+            // 📍 2. 處理截止日期 (預設 14 天，如果有後端回傳則用後端的)
+            let expireDisplay = "14 天內"; 
+            if (data.expires_at) {
+                const d = new Date(data.expires_at);
+                expireDisplay = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
+            }
+
+            // 📍 3. 組合原本那套完整的專業訊息
+            const shareMessage = `同仁您好，請點擊下方連結確認本月班表並完成簽核：\n🔗 ${confirmUrl}\n\n⚠️ 請於 ${expireDisplay} 前完成確認，逾期連結將失效。`;
+
+            // 📍 4. 將完整訊息填入彈窗
+            document.getElementById("shareText").innerText = shareMessage;
+            
+            // 顯示成功彈窗 (successModal)
             document.getElementById("successModal").style.display = "flex";
             
-            // 關閉建立視窗並重整下方任務清單
+            // 📍 5. 隱藏建立視窗並重整清單
             document.getElementById("modal").style.display = "none";
             fetchTasks(); 
+
+            // (選配) 成功後自動清空表單，讓畫面變乾淨
+            clearFile();
+            detectedSigners = [];
+            manualSigners = [];
         } else {
             throw new Error(data.message || "建立失敗");
         }
