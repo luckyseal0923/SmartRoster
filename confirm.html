@@ -352,36 +352,73 @@ async function login() {
 }
 
 // 📍 2. 專門負責把資料塞進 HTML 的函數
+// 📍 2. 專門負責把資料塞進 HTML 的函數 (修正版)
 function displayData(record) {
   currentStaffId = record.staff_id;
   document.getElementById("name").innerText = record.name || "未定義";
   document.getElementById("staff").innerText = record.staff_id;
 
   const tbody = document.getElementById("scheduleTable");
+  const tableContainer = tbody.closest("table"); // 取得 table 標籤本身
   tbody.innerHTML = "";
 
-  // 顯示簽核月份 (如果 API 有回傳)
+  // 顯示簽核月份
   if (record.sign_month) {
     const ym = String(record.sign_month);
-    let year = ym.substring(0,4);
-    let month = parseInt(ym.substring(5,7) || ym.substring(4,6), 10);
+    let year = ym.substring(0, 4);
+    let month = parseInt(ym.substring(5, 7) || ym.substring(4, 6), 10);
     document.getElementById("scheduleTitle").innerText = `班表內容｜${year}年${month}月`;
   }
 
-  // 處理班表排序與顯示
-  if (Array.isArray(record.schedule_json) && record.schedule_json.length > 0) {
-    record.schedule_json.sort((a, b) => Number(a.date) - Number(b.date));
-    record.schedule_json.forEach(entry => {
-      tbody.innerHTML += `
-        <tr>
-          <td>${entry.date}</td>
-          <td>${entry.shift}</td>
-          <td>${entry.note || "-"}</td>
-        </tr>`;
-    });
+  // --- 📍 核心修改：判斷是否為手動新增人員 ---
+  if (record.source === "manual") {
+    // 1. 隱藏表格
+    tableContainer.style.display = "none";
+    
+    // 2. 在表格位置插入 PDF 查看區塊
+    const pdfHTML = `
+      <div id="pdfArea" style="margin: 20px 0; padding: 20px; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 12px; text-align: center;">
+        <div style="font-size: 32px; margin-bottom: 8px;">📋</div>
+        <h4 style="color: #92400e; margin: 0 0 8px 0;">您為手動補登人員</h4>
+        <p style="color: #b45309; font-size: 14px; margin-bottom: 16px;">
+          系統無您的個人班表資料，請點擊下方按鈕核對「班表總表」無誤後，再行簽核。
+        </p>
+        <a href="${record.pdf_url}" target="_blank" 
+           style="display: inline-block; background: #f59e0b; color: white; padding: 12px 24px; border-radius: 10px; text-decoration: none; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+           👁 查看班表總表 PDF
+        </a>
+      </div>
+    `;
+    // 確保不會重複插入
+    const existingPdf = document.getElementById("pdfArea");
+    if (existingPdf) existingPdf.remove();
+    tableContainer.insertAdjacentHTML('afterend', pdfHTML);
+
   } else {
-    tbody.innerHTML = "<tr><td colspan='3'>尚無班表資料</td></tr>";
+    // 3. 正常人員：顯示表格並清空可能存在的 PDF 區塊
+    tableContainer.style.display = "table";
+    const existingPdf = document.getElementById("pdfArea");
+    if (existingPdf) existingPdf.remove();
+
+    // 處理班表排序與顯示
+    if (Array.isArray(record.schedule_json) && record.schedule_json.length > 0) {
+      record.schedule_json.sort((a, b) => Number(a.date) - Number(b.date));
+      record.schedule_json.forEach(entry => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${entry.date}</td>
+            <td>${entry.shift}</td>
+            <td>${entry.note || "-"}</td>
+          </tr>`;
+      });
+    } else {
+      tbody.innerHTML = "<tr><td colspan='3'>尚無班表資料</td></tr>";
+    }
   }
+
+  // 顯示結果區塊
+  document.getElementById("resultCard").classList.remove("hidden");
+}
 
   // 顯示結果區塊
   document.getElementById("resultCard").classList.remove("hidden");
