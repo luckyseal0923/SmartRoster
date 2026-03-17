@@ -470,13 +470,22 @@ async function runCheck() {
 /* ===== 2. 取消建立 ===== */
 function cancelCreate(){
   if (!confirm("確定要取消建立任務？")) return;
+
+  // 📍 1. 清空變數資料
   detectedSigners = [];
   manualSigners = [];
+
+  // 📍 2. 清空畫面顯示
   document.getElementById("signerList").innerHTML = "";
   document.getElementById("manualList").innerHTML = "";
+  
+  // 📍 3. 呼叫你寫好的清空檔案函數 (補上這行)
+  clearFile(); 
+
+  // 📍 4. 關閉視窗
   document.getElementById("modal").style.display = "none";
 }
-  
+
 function clearFile(){
   fileInput.value = "";
   fileName.textContent = "";
@@ -812,7 +821,42 @@ async function confirmAdminLogin(){
   }
 
 }
-  
+  /* 補這段：負責把辨識結果畫在網頁上 */
+function renderSignerList() {
+    const box = document.getElementById("signerList");
+    const total = detectedSigners.length;
+    const totalPages = Math.ceil(total / SIGNERS_PER_PAGE);
+    const start = (signerPage - 1) * SIGNERS_PER_PAGE;
+    const pageData = detectedSigners.slice(start, start + SIGNERS_PER_PAGE);
+
+    let html = `<h4>📋 已辨識簽核人（${total} 人）</h4>
+        <div style="max-height:250px;overflow:auto;border:1px solid #e5e7eb;border-radius:8px;">
+        <table style="width:100%;font-size:14px;"><tr><th>員工編號</th><th>姓名</th><th></th></tr>`;
+
+    pageData.forEach((s, idx) => {
+        html += `<tr><td>${s.staffId}</td><td>${s.name || "-"}</td>
+            <td><button onclick="removeDetected(${start + idx})" style="border:none;background:none;color:#b91c1c;cursor:pointer;">✖</button></td></tr>`;
+    });
+
+    html += `</table></div>
+        <div style="display:flex;justify-content:space-between;margin-top:8px;">
+        <button ${signerPage===1?"disabled":""} onclick="changeSignerPage(-1)">◀</button>
+        <span>第 ${signerPage} / ${totalPages || 1} 頁</span>
+        <button ${signerPage===totalPages?"disabled":""} onclick="changeSignerPage(1)">▶</button></div>`;
+    box.innerHTML = html;
+}
+
+function changeSignerPage(delta) {
+    signerPage += delta;
+    renderSignerList();
+}
+
+function removeDetected(index) {
+    if (confirm("確定移除？")) {
+        detectedSigners.splice(index, 1);
+        renderSignerList();
+    }
+}
 </script>
 
 <div class="modal" id="successModal" style="display: none; align-items: center; justify-content: center;">
