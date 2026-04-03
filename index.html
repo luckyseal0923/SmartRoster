@@ -646,9 +646,17 @@ tbody.innerHTML = "";
       </td>
       <td>
         <div style="display: flex; gap: 8px;">
-          <button class="copy" onclick="copyLink('${task.task_id}')" style="padding: 4px 8px; background: none; border: 1px solid var(--border); border-radius: 6px;" title="複製連結">🔗</button>
-          <button class="primary" onclick="handleDownloadAuth('${task.task_id}')" style="padding: 4px 8px; font-size: 12px; border-radius: 6px; background: var(--primary); color: white; border: none;">📥 簽核狀態</button>
-        </div>
+<button class="copy" onclick="copyLink('${task.task_id}')" ...>🔗</button>
+
+<button class="primary" onclick="handleDownloadAuth('${task.task_id}')" ...>
+  📥 簽核狀態
+</button>
+
+<button class="secondary"
+        onclick="handleRemind('${task.task_id}')"
+        style="padding:4px 8px;font-size:12px;border-radius:6px;">
+  📣 催簽
+</button>
       </td>
     `;
     tbody.appendChild(tr);
@@ -666,6 +674,36 @@ function copyLink(taskId) {
   navigator.clipboard.writeText(signUrl).then(() => {
     alert(`任務 ${taskId} 連結已複製到剪貼簿！`);
   });
+}
+  /* =========================
+   催簽功能
+========================= */
+async function handleRemind(taskId){
+
+  try{
+
+    const res = await fetch(
+      `https://chihwei-n8n.zeabur.app/webhook/roster-remind?task_id=${taskId}`
+    );
+
+    const data = await res.json();
+
+    if(data.status !== "ok"){
+      alert("❌ 催簽訊息產生失敗");
+      return;
+    }
+
+    const text = data.message;
+
+    // 自動複製
+    navigator.clipboard.writeText(text).then(()=>{
+      alert("📣 催簽訊息已複製！直接貼給同仁即可");
+    });
+
+  }catch(err){
+    alert("❌ 系統錯誤：" + err.message);
+  }
+
 }
 
 // 複製訊息並關閉
